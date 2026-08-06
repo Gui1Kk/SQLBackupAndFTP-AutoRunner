@@ -1,0 +1,44 @@
+name: Relatar problema
+description: Informe um defeito reproduzível no AutoRunner
+title: "[BUG] "
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: "Não publique senhas, bases de clientes ou logs com dados pessoais."
+  - type: input
+    id: version
+    attributes:
+      label: Versão do AutoRunner
+      placeholder: 2.2.1
+    validations:
+      required: true
+  - type: input
+    id: windows
+    attributes:
+      label: Windows
+      placeholder: Windows Server 2022 x64
+    validations:
+      required: true
+  - type: input
+    id: sqlbackup
+    attributes:
+      label: Versão do SQLBackupAndFTP
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problema
+      description: Descreva o comportamento observado e o esperado.
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Passos para reproduzir
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Evidências sanitizadas
+      description: Mensagem completa, prints e trechos de log sem dados sensíveis.
