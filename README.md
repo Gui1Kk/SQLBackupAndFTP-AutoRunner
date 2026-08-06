@@ -12,7 +12,7 @@
   <img alt="Plataforma" src="https://img.shields.io/badge/Windows-x64-0078D4?logo=windows11&logoColor=white">
   <img alt="Host" src="https://img.shields.io/badge/Host-.NET%20x64-512BD4?logo=dotnet&logoColor=white">
   <img alt="Backend" src="https://img.shields.io/badge/Backend-PowerShell%205.1-5391FE?logo=powershell&logoColor=white">
-  <img alt="Versão" src="https://img.shields.io/badge/versão-2.2.5-1F6FEB">
+  <img alt="Versão" src="https://img.shields.io/badge/versão-2.2.6-1F6FEB">
   <img alt="Licença" src="https://img.shields.io/badge/licença-proprietária-red">
 </p>
 
@@ -23,7 +23,8 @@
 
 | Versão | Instalador | Portátil | Código-fonte | Situação |
 |---|---|---|---|---|
-| **2.2.5** | `SQLBackupAndFTP-AutoRunner-Setup-v2.2.5.exe` | `SQLBackupAndFTP-AutoRunner-v2.2.5-Portable.zip` | `SQLBackupAndFTP-AutoRunner-v2.2.5-Source.zip` | **Correção recomendada para homologação** |
+| **2.2.6** | `SQLBackupAndFTP-AutoRunner-Setup-v2.2.6.exe` | `SQLBackupAndFTP-AutoRunner-v2.2.6-Portable.zip` | `SQLBackupAndFTP-AutoRunner-v2.2.6-Source.zip` | **Correção recomendada para homologação** |
+| 2.2.5 | Setup x64 | Portable x64 | Source | Substituída pela 2.2.6 |
 | 2.2.4 | Setup x64 | Portable x64 | Source | Substituída pela 2.2.5 |
 | 2.2.3 | Setup x64 | Portable x64 | Source | Substituída pela 2.2.4 |
 | 2.2.2 | Setup x64 | Portable x64 | Source | Substituída pela 2.2.3 |
@@ -31,7 +32,7 @@
 | 2.2.0 | Setup x64 | Portable x64 | Source | Substituída pela 2.2.1 |
 | 2.1.0 RC | Não disponível | Pacote legado | Incluído no pacote | Legada, não recomendada |
 
-Os arquivos `.sha256.txt` acompanham cada artefato. A versão 2.2.5 deve ser testada em Windows x64 antes de substituir a release marcada como estável.
+Os arquivos `.sha256.txt` acompanham cada artefato. A versão 2.2.6 deve ser testada em Windows x64 antes de substituir a release marcada como estável.
 
 ## O que a ferramenta resolve
 
@@ -60,7 +61,7 @@ A compatibilidade é detectada pela presença e validação da CLI, sem depender
 
 ## Instalação recomendada
 
-1. Baixe `SQLBackupAndFTP-AutoRunner-Setup-v2.2.5.exe`.
+1. Baixe `SQLBackupAndFTP-AutoRunner-Setup-v2.2.6.exe`.
 2. Execute como administrador.
 3. Confirme ou selecione a instalação do SQLBackupAndFTP.
 4. Escolha os atalhos desejados.
@@ -106,7 +107,7 @@ A interface abre diretamente, sem janela de CMD. O tutorial inicial pode ser:
 - ocultado para a versão atual;
 - reaberto por **Ajuda e tutorial**.
 
-A versão **2.2.4** introduziu a interface responsiva, o host .NET x64 próprio e o novo ícone. A versão **2.2.5** corrige três falhas confirmadas nessa implementação: manifesto de ativação inválido no launcher Portable, geração do `SetupHost.exe` dentro do payload imutável e barra lateral do instalador com logo/textos corrompidos. O PowerShell continua sendo o backend, mas fica hospedado ou oculto nos bastidores e não aparece como aplicativo separado na barra de tarefas. Falhas precoces ficam registradas em `%TEMP%\SQLBackupAndFTPAuto`.
+A versão **2.2.6** corrige a atualização sobre instalações anteriores: a pasta antiga deixa de ser copiada recursivamente e passa a ser renomeada atomicamente para rollback. Falhas de enumeração deixam de ser mascaradas como junction, e a primeira compilação do host Portable passa a registrar um log com código de erro. O PowerShell continua sendo o backend, hospedado ou oculto nos bastidores. Falhas precoces ficam registradas em `%TEMP%\SQLBackupAndFTPAuto`.
 
 ## Segurança e robustez
 
@@ -148,6 +149,8 @@ python tests/V222-Regression-QA.py
 python tests/V223-Regression-QA.py
 python tests/V224-Regression-QA.py
 python tests/V225-Regression-QA.py
+python tests/V226-Regression-QA.py
+python tests/Upgrade-Transaction-Model.py
 python tests/Behavioral-Model.py
 python tests/State-Machine-Fuzz.py --iterations 100000 --seed 20260806
 ```
