@@ -1,0 +1,16 @@
+* text=auto
+*.ps1 text eol=crlf working-tree-encoding=UTF-8
+*.psm1 text eol=crlf working-tree-encoding=UTF-8
+*.psd1 text eol=crlf working-tree-encoding=UTF-8
+*.cmd text eol=crlf
+*.bat text eol=crlf
+*.py text eol=lf
+*.md text eol=lf
+*.yml text eol=lf
+*.yaml text eol=lf
+*.exe binary
+*.dll binary
+*.lib binary
+*.ico binary
+*.zip binary
+*.msi binary
