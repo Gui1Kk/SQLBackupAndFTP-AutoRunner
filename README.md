@@ -16,13 +16,15 @@
 
 ## Downloads
 
-| Versão | Instalador | Portátil | Código-fonte | Situação |
-|---|---|---|---|---|
-| **2.2.1** | [Setup x64](downloads/v2.2.1/SQLBackupAndFTP-AutoRunner-Setup-v2.2.1.exe) | [Portable x64](downloads/v2.2.1/SQLBackupAndFTP-AutoRunner-v2.2.1-Portable.zip) | [Source](downloads/v2.2.1/SQLBackupAndFTP-AutoRunner-v2.2.1-Source.zip) | Correção recomendada |
-| 2.2.0 | [Setup x64](downloads/v2.2.0/SQLBackupAndFTP-AutoRunner-Setup-v2.2.0.exe) | [Portable x64](downloads/v2.2.0/SQLBackupAndFTP-AutoRunner-v2.2.0-Portable.zip) | [Source](downloads/v2.2.0/SQLBackupAndFTP-AutoRunner-v2.2.0-Source.zip) | Substituída pela 2.2.1 |
-| 2.1.0 RC | Não disponível | [Pacote legado](downloads/v2.1.0-RC/SQLBackupAndFTP-AutoRunner-v2.1.0-RC.zip) | Incluído no pacote | Legada, não recomendada |
+Os instaladores, pacotes portáteis e códigos-fonte compactados são distribuídos pela página de [Releases](https://github.com/Gui1Kk/SQLBackupAndFTP-AutoRunner/releases). O inventário criptográfico está em [downloads/SHA256SUMS.txt](downloads/SHA256SUMS.txt).
 
-Os arquivos `.sha256.txt` ficam ao lado de cada artefato para conferência de integridade.
+| Versão | Artefatos | Situação |
+|---|---|---|
+| **2.2.1** | Setup x64, Portable x64 e Source | Correção recomendada |
+| 2.2.0 | Setup x64, Portable x64 e Source | Substituída pela 2.2.1 |
+| 2.1.0 RC | Pacote legado | Não recomendada |
+
+Consulte também [downloads/README.md](downloads/README.md) e [docs/RELEASES.md](docs/RELEASES.md).
 
 ## O que a ferramenta resolve
 
@@ -43,7 +45,7 @@ A compatibilidade é detectada pela presença e validação da CLI, sem depender
 
 ## Instalação recomendada
 
-1. Baixe `SQLBackupAndFTP-AutoRunner-Setup-v2.2.1.exe`.
+1. Baixe `SQLBackupAndFTP-AutoRunner-Setup-v2.2.1.exe` na página de Releases.
 2. Execute como administrador.
 3. Confirme ou selecione a instalação do SQLBackupAndFTP.
 4. Escolha os atalhos desejados.
@@ -104,7 +106,7 @@ native/      launchers x64 e bootstrap do Setup
 scripts/     interface, instalador e runner
 tests/       QA estático, regressão, modelo e fuzzing
 docs/        uso, segurança, testes e documentação técnica
-downloads/   artefatos históricos publicados
+downloads/   inventário e hashes das versões
 ```
 
 ## Histórico, suporte e licença
