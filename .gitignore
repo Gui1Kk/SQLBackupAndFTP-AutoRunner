@@ -1,0 +1,11 @@
+dist/
+test-results/
+qa-output/
+*.log
+*.tmp
+__pycache__/
+.vscode/
+.idea/
+*.pfx
+*.p12
+*.cer
