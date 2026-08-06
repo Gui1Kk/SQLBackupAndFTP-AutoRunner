@@ -1,79 +1,67 @@
 # SQLBackupAndFTP AutoRunner
 
 <p align="center">
+  <img src="assets/AutoRunner.png" width="96" alt="Ícone do SQLBackupAndFTP AutoRunner">
+</p>
+
+<p align="center">
   <strong>Executa automaticamente, após a inicialização do Windows, jobs de backup já configurados no SQLBackupAndFTP.</strong>
 </p>
 
 <p align="center">
-  <a href="https://github.com/Gui1Kk/SQLBackupAndFTP-AutoRunner/releases/latest">
-    <img alt="Última versão" src="https://img.shields.io/github/v/release/Gui1Kk/SQLBackupAndFTP-AutoRunner?style=flat-square&label=vers%C3%A3o">
-  </a>
-  <img alt="Plataforma" src="https://img.shields.io/badge/Windows-x64-0078D4?style=flat-square&logo=windows11&logoColor=white">
-  <img alt="PowerShell" src="https://img.shields.io/badge/PowerShell-5.1+-5391FE?style=flat-square&logo=powershell&logoColor=white">
-  <img alt="Licença" src="https://img.shields.io/badge/licen%C3%A7a-propriet%C3%A1ria-red?style=flat-square">
+  <img alt="Plataforma" src="https://img.shields.io/badge/Windows-x64-0078D4?logo=windows11&logoColor=white">
+  <img alt="Host" src="https://img.shields.io/badge/Host-.NET%20x64-512BD4?logo=dotnet&logoColor=white">
+  <img alt="Backend" src="https://img.shields.io/badge/Backend-PowerShell%205.1-5391FE?logo=powershell&logoColor=white">
+  <img alt="Versão" src="https://img.shields.io/badge/versão-2.2.5-1F6FEB">
+  <img alt="Licença" src="https://img.shields.io/badge/licença-proprietária-red">
 </p>
 
 > [!IMPORTANT]
 > O AutoRunner funciona **somente em sistemas operacionais Windows de 64 bits**. Não há suporte para Windows x86/32 bits, ARM64 ou outros sistemas operacionais.
 
-## Download recomendado
+## Downloads
 
-<p align="center">
-  <a href="https://github.com/Gui1Kk/SQLBackupAndFTP-AutoRunner/releases/download/v2.2.1/SQLBackupAndFTP-AutoRunner-Setup-v2.2.1.exe">
-    <img alt="Baixar Setup x64" src="https://img.shields.io/badge/BAIXAR-SETUP_X64-0078D4?style=for-the-badge&logo=windows11&logoColor=white">
-  </a>
-  <a href="https://github.com/Gui1Kk/SQLBackupAndFTP-AutoRunner/releases/download/v2.2.1/SQLBackupAndFTP-AutoRunner-v2.2.1-Portable.zip">
-    <img alt="Baixar Portable x64" src="https://img.shields.io/badge/BAIXAR-PORTABLE_X64-2EA44F?style=for-the-badge">
-  </a>
-  <a href="https://github.com/Gui1Kk/SQLBackupAndFTP-AutoRunner/releases/download/v2.2.1/SQLBackupAndFTP-AutoRunner-v2.2.1-Source.zip">
-    <img alt="Baixar código-fonte" src="https://img.shields.io/badge/BAIXAR-C%C3%93DIGO_FONTE-6E40C9?style=for-the-badge&logo=github&logoColor=white">
-  </a>
-</p>
+| Versão | Instalador | Portátil | Código-fonte | Situação |
+|---|---|---|---|---|
+| **2.2.5** | `SQLBackupAndFTP-AutoRunner-Setup-v2.2.5.exe` | `SQLBackupAndFTP-AutoRunner-v2.2.5-Portable.zip` | `SQLBackupAndFTP-AutoRunner-v2.2.5-Source.zip` | **Correção recomendada para homologação** |
+| 2.2.4 | Setup x64 | Portable x64 | Source | Substituída pela 2.2.5 |
+| 2.2.3 | Setup x64 | Portable x64 | Source | Substituída pela 2.2.4 |
+| 2.2.2 | Setup x64 | Portable x64 | Source | Substituída pela 2.2.3 |
+| 2.2.1 | Setup x64 | Portable x64 | Source | Substituída pela 2.2.2 |
+| 2.2.0 | Setup x64 | Portable x64 | Source | Substituída pela 2.2.1 |
+| 2.1.0 RC | Não disponível | Pacote legado | Incluído no pacote | Legada, não recomendada |
 
-### Qual arquivo escolher?
-
-| Arquivo | Uso recomendado |
-|---|---|
-| **Setup x64** | Instalação normal, atalhos, reparo, atualização e desinstalação. É a opção recomendada para clientes. |
-| **Portable x64** | Testes, diagnóstico ou execução sem instalar a interface do aplicativo. |
-| **Código-fonte** | Auditoria, desenvolvimento, compilação e manutenção técnica. |
-
-- [Abrir a release mais recente](https://github.com/Gui1Kk/SQLBackupAndFTP-AutoRunner/releases/latest)
-- [Conferir os hashes SHA-256](downloads/SHA256SUMS.txt)
-- [Ver todas as releases](https://github.com/Gui1Kk/SQLBackupAndFTP-AutoRunner/releases)
-
-## Histórico de downloads
-
-| Versão | Release | Setup | Portable | Código-fonte | Situação |
-|---|---|---|---|---|---|
-| **2.2.1** | [Abrir](https://github.com/Gui1Kk/SQLBackupAndFTP-AutoRunner/releases/tag/v2.2.1) | [Baixar](https://github.com/Gui1Kk/SQLBackupAndFTP-AutoRunner/releases/download/v2.2.1/SQLBackupAndFTP-AutoRunner-Setup-v2.2.1.exe) | [Baixar](https://github.com/Gui1Kk/SQLBackupAndFTP-AutoRunner/releases/download/v2.2.1/SQLBackupAndFTP-AutoRunner-v2.2.1-Portable.zip) | [Baixar](https://github.com/Gui1Kk/SQLBackupAndFTP-AutoRunner/releases/download/v2.2.1/SQLBackupAndFTP-AutoRunner-v2.2.1-Source.zip) | **Recomendada** |
-| 2.2.0 | [Abrir](https://github.com/Gui1Kk/SQLBackupAndFTP-AutoRunner/releases/tag/v2.2.0) | [Baixar](https://github.com/Gui1Kk/SQLBackupAndFTP-AutoRunner/releases/download/v2.2.0/SQLBackupAndFTP-AutoRunner-Setup-v2.2.0.exe) | [Baixar](https://github.com/Gui1Kk/SQLBackupAndFTP-AutoRunner/releases/download/v2.2.0/SQLBackupAndFTP-AutoRunner-v2.2.0-Portable.zip) | [Baixar](https://github.com/Gui1Kk/SQLBackupAndFTP-AutoRunner/releases/download/v2.2.0/SQLBackupAndFTP-AutoRunner-v2.2.0-Source.zip) | Substituída pela 2.2.1 |
-| 2.1.0 RC | [Abrir](https://github.com/Gui1Kk/SQLBackupAndFTP-AutoRunner/releases/tag/v2.1.0-RC) | Não disponível | [Pacote legado](https://github.com/Gui1Kk/SQLBackupAndFTP-AutoRunner/releases/download/v2.1.0-RC/SQLBackupAndFTP-AutoRunner-v2.1.0-RC.zip) | Incluído no pacote | Legada, não recomendada |
-
-> [!NOTE]
-> Os links da tabela apontam diretamente para os arquivos anexados às Releases. O navegador inicia o download sem precisar abrir manualmente a página da versão.
+Os arquivos `.sha256.txt` acompanham cada artefato. A versão 2.2.5 deve ser testada em Windows x64 antes de substituir a release marcada como estável.
 
 ## O que a ferramenta resolve
 
 Alguns clientes desligam o servidor e o ligam apenas ocasionalmente. Nesses casos, um job agendado no SQLBackupAndFTP pode não executar porque o computador estava desligado no horário configurado. O AutoRunner cria uma tarefa no Agendador do Windows para chamar os jobs selecionados depois que o sistema inicia.
 
-Ele **não altera** bancos de dados, credenciais, destinos, retenção, compactação ou agendamentos internos do SQLBackupAndFTP.
+Ele **não altera**:
+
+- bancos de dados;
+- credenciais;
+- destinos de backup;
+- retenção;
+- compactação;
+- agendamentos internos do SQLBackupAndFTP.
 
 ## Requisitos
 
 - Windows 10, Windows 11 ou Windows Server em edição **x64**;
-- Windows PowerShell 5.1 ou superior;
+- .NET Framework 4.8 x64, incluindo `csc.exe` do Framework64;
+- Windows PowerShell 5.1, hospedado internamente pelo executável;
 - privilégios administrativos para instalar ou alterar a automação;
 - SQLBackupAndFTP instalado;
 - `SqlBak.Job.Cli.exe` disponível na instalação do SQLBackupAndFTP;
-- ao menos um job de backup previamente configurado.
+- ao menos um job de backup previamente configurado no SQLBackupAndFTP.
 
-A compatibilidade é detectada pela presença e validação da CLI, sem depender de caminho fixo ou do idioma do Windows.
+A compatibilidade é detectada pela presença e validação da CLI, sem depender de um caminho fixo ou do idioma do Windows.
 
 ## Instalação recomendada
 
-1. Clique em **Baixar Setup x64** no início desta página.
-2. Execute `SQLBackupAndFTP-AutoRunner-Setup-v2.2.1.exe` como administrador.
+1. Baixe `SQLBackupAndFTP-AutoRunner-Setup-v2.2.5.exe`.
+2. Execute como administrador.
 3. Confirme ou selecione a instalação do SQLBackupAndFTP.
 4. Escolha os atalhos desejados.
 5. Abra o AutoRunner ao concluir.
@@ -81,13 +69,13 @@ A compatibilidade é detectada pela presença e validação da CLI, sem depender
 7. Execute **Testar backup agora**.
 8. Confira o histórico no SQLBackupAndFTP e o arquivo no destino.
 
-Aplicação:
+O aplicativo é instalado separadamente em:
 
 ```text
 C:\Program Files\Alpha Software\SQLBackupAndFTP AutoRunner
 ```
 
-Dados operacionais:
+Os dados operacionais ficam em:
 
 ```text
 C:\ProgramData\SQLBackupAndFTPAuto
@@ -95,47 +83,101 @@ C:\ProgramData\SQLBackupAndFTPAuto
 
 ## Detecção do SQLBackupAndFTP
 
-A busca considera caminho salvo, Registro 32/64 bits, serviço, processos, App Paths, atalhos do Menu Iniciar, `Program Files`, busca limitada pela CLI e seleção manual. Entradas incompletas do Registro não interrompem a detecção.
+A busca considera:
+
+1. caminho salvo e validado;
+2. Registro do Windows em 32 e 64 bits;
+3. serviço do SQLBackupAndFTP;
+4. processos em execução;
+5. App Paths;
+6. atalhos do Menu Iniciar;
+7. `Program Files` e `Program Files (x86)`;
+8. busca limitada por `SqlBak.Job.Cli.exe`;
+9. seleção manual da pasta.
+
+Entradas incompletas do Registro não interrompem a detecção. Uma pasta só é aceita quando contém a CLI esperada.
 
 ## Interface e tutorial
 
-A interface abre diretamente, sem janela de CMD. O tutorial pode ser percorrido, pulado, ocultado para a versão atual e reaberto pelo botão `?`.
+A interface abre diretamente, sem janela de CMD. O tutorial inicial pode ser:
 
-A versão **2.2.1** corrige a incompatibilidade do instalador com Windows PowerShell 5.1 e o congelamento da navegação do tutorial observado na 2.2.0.
+- percorrido com **Avançar** e **Voltar**;
+- pulado;
+- ocultado para a versão atual;
+- reaberto por **Ajuda e tutorial**.
+
+A versão **2.2.4** introduziu a interface responsiva, o host .NET x64 próprio e o novo ícone. A versão **2.2.5** corrige três falhas confirmadas nessa implementação: manifesto de ativação inválido no launcher Portable, geração do `SetupHost.exe` dentro do payload imutável e barra lateral do instalador com logo/textos corrompidos. O PowerShell continua sendo o backend, mas fica hospedado ou oculto nos bastidores e não aparece como aplicativo separado na barra de tarefas. Falhas precoces ficam registradas em `%TEMP%\SQLBackupAndFTPAuto`.
 
 ## Segurança e robustez
 
-- tarefa executada como `SYSTEM` com instância única;
+- tarefa executada como `SYSTEM` com política de instância única;
 - seleção explícita de jobs;
+- confirmação para jobs manuais ou de baixa confiança;
 - validação SHA-256 dos arquivos do pacote;
-- recusa de traversal, links, junctions e arquivos não declarados;
+- recusa de arquivos não declarados, traversal, links e junctions;
 - ACLs restritivas em arquivos executados como `SYSTEM`;
 - mutex com recuperação após encerramento abrupto;
 - continuidade dos demais jobs após falha individual;
-- retentativas e intervalo mínimo por job;
-- logs rotativos e escrita JSON atômica;
-- reparo e desinstalação sem apagar jobs do SQLBackupAndFTP.
+- retentativas controladas e intervalo mínimo por job;
+- logs rotativos, estado individual e escrita JSON atômica;
+- reparo e desinstalação sem apagar os jobs do SQLBackupAndFTP.
 
 ## Limite importante
 
-Código zero da CLI não confirma que o backup foi criado e enviado. A confirmação real exige conferir o histórico, o arquivo no destino e realizar restaurações periódicas em ambiente de teste.
+Código zero da CLI não confirma que o backup foi criado e enviado. A confirmação real exige verificar:
+
+- o histórico do job no SQLBackupAndFTP;
+- o arquivo no destino;
+- uma restauração periódica em ambiente de teste.
+
+O AutoRunner executa os jobs selecionados em cada inicialização elegível. Ele não determina qual horário interno foi perdido.
 
 ## Compilação e testes
 
-Consulte [BUILDING.md](BUILDING.md) e [docs/PLANO_DE_TESTES.md](docs/PLANO_DE_TESTES.md).
+Consulte [BUILDING.md](BUILDING.md) para gerar Setup, Portable e MSI. O plano completo de testes está em [docs/PLANO_DE_TESTES.md](docs/PLANO_DE_TESTES.md).
+
+Comandos de QA multiplataforma:
+
+```bash
+python tests/Static-QA.py
+python tests/Deep-Review.py
+python tests/Adversarial-Review.py
+python tests/V22-Regression-QA.py
+python tests/V221-Regression-QA.py
+python tests/V222-Regression-QA.py
+python tests/V223-Regression-QA.py
+python tests/V224-Regression-QA.py
+python tests/V225-Regression-QA.py
+python tests/Behavioral-Model.py
+python tests/State-Machine-Fuzz.py --iterations 100000 --seed 20260806
+```
+
+Testes nativos em Windows:
+
+```powershell
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\scripts\Invoke-QA.ps1 -Integration
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\scripts\Manager.ps1 -Action GuiSmoke
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\scripts\Manager.ps1 -Action TutorialSmoke
+```
 
 ## Estrutura
 
 ```text
+assets/      ícone original em PNG/ICO
+host/        hosts .NET x64 da aplicação e do Setup
 build/       empacotamento, MSI e assinatura
 modules/     núcleo compartilhado
 native/      launchers x64 e bootstrap do Setup
 scripts/     interface, instalador e runner
 tests/       QA estático, regressão, modelo e fuzzing
 docs/        uso, segurança, testes e documentação técnica
-downloads/   inventário e hashes das versões
+downloads/   artefatos históricos publicados
 ```
 
-## Histórico, suporte e licença
+## Histórico
 
-Veja [CHANGELOG.md](CHANGELOG.md), [docs/RELEASES.md](docs/RELEASES.md), [SECURITY.md](SECURITY.md), [SUPPORT.md](SUPPORT.md) e [LICENSE](LICENSE).
+Veja [CHANGELOG.md](CHANGELOG.md) e [docs/RELEASES.md](docs/RELEASES.md).
+
+## Suporte e licença
+
+Uso interno e distribuição autorizada pela Alpha Software. Consulte [LICENSE](LICENSE), [SECURITY.md](SECURITY.md) e [SUPPORT.md](SUPPORT.md).
