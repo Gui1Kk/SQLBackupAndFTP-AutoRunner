@@ -1,11 +1,412 @@
+
+node_modules/
+**/node_modules/
+.npm/
+.pnpm-store/
+.yarn/
+.yarn-cache/
+.yarn-integrity
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# Package manager transient files
+*.tgz
+.npmrc.local
+.pnpm-debug.log
+
+# Keep lockfiles versioned
+!package-lock.json
+!pnpm-lock.yaml
+!yarn.lock
+
+# ------------------------------------------------------------
+# Vercel / Next / frontend build output
+# ------------------------------------------------------------
+.vercel/
+**/.vercel/
+.next/
+**/.next/
+out/
+**/out/
+.nuxt/
+**/.nuxt/
+.svelte-kit/
+**/.svelte-kit/
 dist/
-test-results/
-qa-output/
-*.log
-*.tmp
-__pycache__/
-.vscode/
-.idea/
+**/dist/
+build/
+**/build/
+coverage/
+**/coverage/
+.nyc_output/
+.turbo/
+.cache/
+.parcel-cache/
+.vite/
+*.tsbuildinfo
+
+# ------------------------------------------------------------
+# Environment variables / secrets
+# ------------------------------------------------------------
+.env
+.env.*
+!.env.example
+!.env.template
+!.env.sample
+!**/.env.example
+!**/.env.template
+!**/.env.sample
+
+*.secret
+*.secrets
+*.key
+*.pem
 *.pfx
 *.p12
-*.cer
+*.cer.private
+*.jks
+*.keystore
+
+secrets/
+**/secrets/
+.credentials/
+**/.credentials/
+
+# Local credentials / tokens
+credentials.json
+service-account*.json
+token.json
+tokens.json
+auth.local.json
+*.auth.local.json
+
+# ------------------------------------------------------------
+# Docker / Compose local state
+# ------------------------------------------------------------
+docker-data/
+**/docker-data/
+docker-volumes/
+**/docker-volumes/
+.postgres/
+postgres-data/
+nats-data/
+caddy-data/
+caddy-config/
+
+docker-compose.override.yml
+compose.override.yml
+
+# ------------------------------------------------------------
+# PostgreSQL / database dumps / backups
+# ------------------------------------------------------------
+*.sql
+*.sql.gz
+*.dump
+*.backup
+*.bak
+*.db-journal
+*.sqlite-journal
+*.sqlite-wal
+*.sqlite-shm
+
+# Do not ignore tracked migrations/schemas
+!services/**/migrations/*.sql
+!database/migrations/*.sql
+!db/migrations/*.sql
+!deploy/**/migrations/*.sql
+
+# ------------------------------------------------------------
+# PowerShell
+# ------------------------------------------------------------
+*.clixml
+*.ps1xml.user
+*.psd1.user
+*.psm1.user
+PowerShell_transcript.*
+*.transcript.txt
+
+# ------------------------------------------------------------
+# .NET / C# / MSBuild
+# ------------------------------------------------------------
+bin/
+obj/
+**/bin/
+**/obj/
+.vs/
+TestResults/
+**/TestResults/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+*.csproj.user
+*.nupkg
+*.snupkg
+packages/
+**/packages/
+
+# ------------------------------------------------------------
+# Native C/C++ / LLVM / MSVC build products
+# ------------------------------------------------------------
+*.obj
+*.o
+*.lo
+*.a
+*.lib
+*.exp
+*.ilk
+*.pdb
+*.idb
+*.ipdb
+*.iobj
+*.pch
+*.res
+*.tlog
+*.lastbuildstate
+*.manifest.res
+*.map
+
+# Generated executable artifacts
+*.exe
+*.dll
+*.msi
+*.msix
+*.appx
+*.appxbundle
+
+# Keep intentionally versioned source/reference binaries only if explicitly forced
+# Example:
+# !native/reference/example.exe
+
+# ------------------------------------------------------------
+# Release / packaging output
+# ------------------------------------------------------------
+release/
+releases/
+release-*/
+**/release-*/
+artifacts/
+**/artifacts/
+packages-out/
+package-output/
+output/
+outputs/
+
+*.zip
+*.7z
+*.rar
+*.tar
+*.tar.gz
+*.gz
+
+# Release hashes/manifests generated beside artifacts
+*.sha256.txt
+SHA256SUMS.generated.txt
+RELEASE-MANIFEST.generated.json
+
+# ------------------------------------------------------------
+# AutoRunner generated/runtime state
+# ------------------------------------------------------------
+ProgramData/
+runtime-data/
+state/
+states/
+diagnostics/
+diagnostic/
+diagnostics-*/
+logs/
+log/
+*.log
+*.log.*
+*.trace
+*.etl
+
+# Local agent identity/state
+agent-state/
+agent-identity.json
+agent-identity.dat
+remote-agent.local.json
+
+# Local Control Plane runtime
+control-plane-data/
+control-plane-backups/
+backup/
+backups/
+
+# ------------------------------------------------------------
+# Tests / QA generated artifacts
+# ------------------------------------------------------------
+.pytest_cache/
+__pycache__/
+**/__pycache__/
+*.py[cod]
+.hypothesis/
+.coverage
+coverage.xml
+htmlcov/
+test-results/
+**/test-results/
+qa-output/
+qa-evidence/
+fuzz-results/
+tmp-test/
+tmp-tests/
+
+# ------------------------------------------------------------
+# Python virtual environments / tooling
+# ------------------------------------------------------------
+.venv/
+venv/
+env/
+ENV/
+pip-wheel-metadata/
+.mypy_cache/
+.ruff_cache/
+.pyre/
+.pytype/
+
+# ------------------------------------------------------------
+# IDEs / editors
+# ------------------------------------------------------------
+.idea/
+*.iml
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.example.json
+!.vscode/tasks.json
+!.vscode/launch.json
+
+*.code-workspace.user
+.history/
+
+# ------------------------------------------------------------
+# Windows / macOS / Linux filesystem junk
+# ------------------------------------------------------------
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+ehthumbs_vista.db
+Desktop.ini
+$RECYCLE.BIN/
+*.lnk
+
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+.Spotlight-V100
+.Trashes
+
+*~
+.fuse_hidden*
+.directory
+.Trash-*
+
+# ------------------------------------------------------------
+# Temporary files
+# ------------------------------------------------------------
+tmp/
+temp/
+.tmp/
+.temp/
+**/tmp/
+**/temp/
+*.tmp
+*.temp
+*.swp
+*.swo
+*.bak~
+*.orig
+*.rej
+
+# ------------------------------------------------------------
+# OS crash dumps / profiler output
+# ------------------------------------------------------------
+*.dmp
+*.mdmp
+*.core
+core
+core.*
+
+# ------------------------------------------------------------
+# Certificates / signing output
+# ------------------------------------------------------------
+signing/
+codesign/
+*.sig
+*.signature
+
+# ------------------------------------------------------------
+# Local-only configuration
+# ------------------------------------------------------------
+*.local
+*.local.*
+local.settings.json
+settings.local.json
+config.local.json
+appsettings.Local.json
+appsettings.Development.local.json
+
+# ------------------------------------------------------------
+# IMPORTANT: files that MUST remain versioned
+# ------------------------------------------------------------
+!.gitignore
+!.dockerignore
+!Dockerfile
+!Dockerfile.*
+!docker-compose.yml
+!docker-compose.*.yml
+!compose.yml
+!compose.*.yml
+!vercel.json
+!package.json
+!package-lock.json
+!VERSION
+!README.md
+!LICENSE
+!SECURITY.md
+!SUPPORT.md
+
+# Documentation and contracts
+!docs/**
+!contracts/**
+!**/*.md
+!**/*.yaml
+!**/*.yml
+!**/*.graphql
+
+# Source code
+!**/*.ps1
+!**/*.psm1
+!**/*.psd1
+!**/*.py
+!**/*.c
+!**/*.h
+!**/*.cs
+!**/*.ts
+!**/*.tsx
+!**/*.js
+!**/*.jsx
+!**/*.mjs
+!**/*.cjs
+!**/*.json
+!**/*.html
+!**/*.css
+
+# ------------------------------------------------------------
+# AutoRunner source paths that resemble generated output
+# ------------------------------------------------------------
+# The root /build directory contains release/build SOURCE code.
+!/build/
+!/build/**
+
+# PostgreSQL bootstrap schema is source and must be versioned.
+!deploy/postgres/
+!deploy/postgres/init/
+!deploy/postgres/init/*.sql
+
+# Generated only inside Source release packages, not a working-tree source file.
+SOURCE-SHA256SUMS.txt

@@ -1,62 +1,61 @@
-# Guia de uso 2.2.1
+# Guia de uso 2.3.5 RC
 
-## Instalação
+## Instalar
 
-1. Confirme que o Windows é x64.
-2. Confirme que o SQLBackupAndFTP está instalado e possui ao menos um job configurado.
-3. Execute o Setup como administrador.
-4. Confirme a pasta detectada ou selecione a pasta que contém `SqlBak.Job.Cli.exe`.
-5. Escolha os atalhos e conclua a instalação.
-6. Abra o AutoRunner.
+1. Execute o Setup 2.3.5 RC como administrador.
+2. Confirme a pasta detectada do SQLBackupAndFTP.
+3. Quando necessário, selecione manualmente a pasta que contém `SqlBak.Job.Cli.exe`.
+4. Escolha o atalho da Área de Trabalho.
+5. Conclua e abra o AutoRunner.
 
-A ausência do SQLBackupAndFTP não deve interromper a instalação do AutoRunner, mas impede configurar a automação até que uma pasta válida seja localizada.
+A ausência do SQLBackupAndFTP não precisa interromper a instalação do aplicativo, mas impede instalar a automação até que uma CLI válida seja localizada.
 
-## Primeira abertura
+## Configurar automação
 
-O tutorial explica localização do SQLBackupAndFTP, instalação da automação, seleção de jobs, teste, validação, diagnóstico, reparo e remoção. Ele pode ser pulado e reaberto pelo botão `?`.
-
-## Localizar o SQLBackupAndFTP
-
-Quando a detecção automática não encontrar a instalação:
-
-1. clique em **Localizar SQLBackupAndFTP**;
-2. use **Procurar automaticamente**;
-3. se necessário, clique em **Selecionar pasta**;
-4. escolha a pasta que contém `SqlBak.Job.Cli.exe`;
-5. confirme a instalação selecionada.
-
-## Instalar a automação
-
-1. clique em **Instalar automação**;
-2. selecione somente os jobs desejados;
-3. mantenha o tipo `Default` quando deve prevalecer a configuração original do job;
-4. defina o atraso após o boot;
-5. configure intervalo mínimo e tentativas quando necessário;
-6. confirme jobs manuais, não agendados ou de baixa confiança;
-7. conclua e execute a validação.
+1. Clique em **Instalar automação**.
+2. Selecione explicitamente os jobs.
+3. Confirme jobs manuais ou de baixa confiança.
+4. Configure atraso após boot, intervalo mínimo e retentativas.
+5. Conclua e use **Validar instalação**.
 
 ## Testar
 
-1. clique em **Testar backup agora**;
-2. aguarde a chamada terminar;
-3. abra o SQLBackupAndFTP;
-4. confira o histórico do job;
-5. confira o arquivo no destino;
-6. realize restaurações periódicas em ambiente de teste.
+1. Clique em **Testar backup agora**.
+2. Confira o histórico do job no SQLBackupAndFTP.
+3. Confira o arquivo no destino.
+4. Faça uma restauração de teste.
 
 ## Manutenção
 
-- **Validar instalação:** verifica arquivos, configuração, manifesto, ACL e tarefa.
-- **Reparar automação:** recria runtime e tarefa preservando jobs.
-- **Remover automação:** remove tarefa e dados operacionais, preservando aplicativo e jobs.
-- **Reparar aplicativo:** executa o Setup local.
-- **Desinstalar aplicativo:** remove aplicativo e automação sem apagar os jobs originais.
-- **Exportar diagnóstico:** reúne configuração, estado, logs, tarefa e eventos.
+- **Validar instalação:** configuração, manifesto, ACL, tarefa e caminhos;
+- **Reparar automação:** recria runtime e tarefa preservando jobs;
+- **Remover automação:** remove tarefa e dados operacionais sem apagar jobs originais;
+- **Reparar aplicativo:** executa o Setup preservado por fluxo externo seguro;
+- **Desinstalar aplicativo:** remove aplicativo e automação, preservando jobs do SQLBackupAndFTP;
+- **Exportar diagnóstico:** reúne logs, estado, configuração, tarefa e eventos.
 
 ## Instalação silenciosa
 
 ```text
-SQLBackupAndFTP-AutoRunner-Setup-v2.2.1.exe /silent /desktop
+SQLBackupAndFTP-AutoRunner-Setup-v2.3.5-RC.exe /silent /desktop
 ```
 
-Opções: `/silent`, `/desktop`, `/nolaunch`, `/notutorial`, `/repair`, `/uninstall` e `/purgedata`.
+Opções:
+
+```text
+/silent /desktop /nolaunch /notutorial /repair /uninstall /purgedata
+```
+
+`/deferred` é interno e não deve ser usado manualmente.
+
+## Logs precoces
+
+```text
+%TEMP%\SQLBackupAndFTPAuto\setup-startup.log
+%TEMP%\SQLBackupAndFTPAuto\manager-startup.log
+%TEMP%\SQLBackupAndFTPAuto\manager.log
+```
+
+## Aprovação
+
+Uma tela de sucesso ou código zero não substitui histórico, arquivo no destino e restauração. Teste também o boot real.

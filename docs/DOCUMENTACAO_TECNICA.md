@@ -1,55 +1,85 @@
-# Documentação técnica 2.2.1
+# Documentação técnica 2.3.5 RC
 
-## Arquitetura
+## Fluxo principal
 
 ```text
-Setup EXE gráfico e autoextraível
-  -> Program Files\Alpha Software\SQLBackupAndFTP AutoRunner
-       -> launcher nativo GUI
-       -> Manager.ps1
-       -> AutoRunner.Core.psm1
-       -> Setup local para reparo/desinstalação
-  -> ProgramData\SQLBackupAndFTPAuto
-       -> config.json / state.json / manifest.json
-       -> runner e módulo validados
-       -> logs e estado por job
-  -> Agendador de Tarefas, SYSTEM, gatilho de boot
-  -> SqlBak.Job.Cli.exe localizado dinamicamente
+SQLBackupAndFTP-AutoRunner.exe, PE32+ x64, asInvoker
+  -> Windows PowerShell 5.1, STA, janela oculta
+     -> scripts\Manager.ps1
+        -> modules\AutoRunner.Core.psm1
+        -> ProgramData\SQLBackupAndFTPAuto
+        -> Agendador de Tarefas, SYSTEM
+        -> SqlBak.Job.Cli.exe
 ```
 
-## Detector do SQLBackupAndFTP
+A 2.3.5 RC não gera nem executa um host .NET na primeira abertura. Isso remove dependências de `csc.exe`, seleção de CLR, cache de host e arquivos `.exe.config` produzidos localmente.
 
-`Find-SqlBackupAndFTPInstallations` agrega candidatos de múltiplas fontes, atribui pontuação e valida cada diretório. Entradas de Registro usam acesso tolerante a propriedades opcionais, impedindo que campos ausentes como `DisplayName` interrompam a detecção sob `Set-StrictMode`.
+## Setup
 
-A busca profunda usa limites de profundidade e quantidade, ignora reparse points e não varre o volume inteiro. Instalações fora das fontes automáticas podem ser selecionadas manualmente quando contêm `SqlBak.Job.Cli.exe`.
+O Setup é um PE x64 elevado com um ZIP anexado. Ele:
 
-## Launcher
+1. cria um diretório privado aleatório sob `Program Files`, com ACL exclusiva para `SYSTEM` e Administradores;
+2. extrai o ZIP interno;
+3. apaga o ZIP temporário antes da validação de completude;
+4. valida `SHA256SUMS.txt`;
+5. recusa traversal, duplicidade, arquivo ausente, arquivo injetado e hash divergente;
+6. executa `Setup-Wizard.ps1` em PowerShell 5.1 STA;
+7. limpa a área temporária.
 
-`SQLBackupAndFTP-AutoRunner.exe` é um PE32+ GUI x64 que inicia `scripts\Manager.ps1` pelo Windows PowerShell com janela oculta. Caminhos ou comandos acima do limite seguro encerram com erro controlado.
+Os switches `/repair`, `/uninstall`, `/silent`, `/desktop`, `/nolaunch`, `/purgedata`, `/deferred` e `/notutorial` são reconhecidos como argumentos completos.
 
-## Setup EXE
+## Atualização
 
-O bootstrapper solicita elevação, cria diretório temporário privado, valida o payload e `SHA256SUMS.txt`, rejeita arquivos injetados, executa `Setup-Wizard.ps1` sem console e limpa a área temporária.
+A nova instalação é copiada para:
 
-## Automação
+```text
+.<nome>.stage-<GUID>
+```
 
-A tarefa executa como `SYSTEM`, usa política de instância única, possui atraso configurável e chama o runner por caminho absoluto.
+A versão anterior é movida para:
 
-O runner valida módulo, configuração, manifesto e CLI; trata mutex abandonado; aplica intervalo mínimo por job; consolida falhas; grava estado atômico e logs rotativos.
+```text
+.<nome>.rollback-<GUID>
+```
 
-## Pastas e Registro
+Os dois diretórios ficam ao lado da instalação definitiva, garantindo o mesmo volume. A promoção usa `System.IO.Directory.Move`. Antes da troca, a árvore antiga é inspecionada sem seguir reparse points e processos que referenciam a pasta pelo executável ou pela linha de comando são encerrados.
 
-- aplicação: `Program Files\Alpha Software\SQLBackupAndFTP AutoRunner`;
-- operação: `ProgramData\SQLBackupAndFTPAuto`;
-- preferência e tutorial: `HKCU\Software\Alpha Software\SQLBackupAndFTP AutoRunner`;
-- instalação: `HKLM\Software\Alpha Software\SQLBackupAndFTP AutoRunner`.
+Uma exceção restaura a versão antiga. Na próxima execução, stages obsoletos são removidos e um rollback único é restaurado quando a pasta principal estiver ausente. Ambiguidade com múltiplos rollbacks falha fechada.
+
+## Auto-bloqueio e scratch privilegiado
+
+Quando o Setup preservado dentro da instalação é usado para reparar ou desinstalar, o wizard elevado externaliza o instalador para um diretório privado de nome GUID sob `Program Files`, valida estrutura e SHA-256, relança com `/deferred` e encerra a instância original antes de mover a pasta. A limpeza aceita apenas um filho imediato de `Program Files` com prefixo conhecido, sufixo GUID exato, inspeção bem-sucedida e ausência de reparse points.
+
+A interface principal não cria uma cópia elevada em `LOCALAPPDATA` nem usa `%TEMP%` do usuário como fronteira de confiança. Ela valida o Setup instalado e solicita elevação; a externalização ocorre somente após a elevação. O staging/rollback da automação e a autocópia do desinstalador seguem o mesmo padrão. Solicitações JSON que atravessam o UAC são vinculadas por SHA-256 à linha de comando e analisadas a partir do mesmo buffer validado.
+
+## Identidade visual hospedada
+
+A interface continua sendo PowerShell/WinForms, mas não depende da identidade visual do `powershell.exe`. O HWND recebe, via `IPropertyStore`, `RelaunchCommand`, `RelaunchDisplayNameResource`, `RelaunchIconResource` e depois `AppUserModelID`, apontando para o launcher nativo. O formulário também recebe o ICO incorporado ao pacote.
+
+## Concorrência
+
+- mutex global para instalação, reparo e desinstalação;
+- mutex local por SID para a interface;
+- mutex do runner com recuperação de abandono;
+- tarefa com política `IgnoreNew`.
+
+## Diretórios
+
+- aplicação: `C:\Program Files\Alpha Software\SQLBackupAndFTP AutoRunner`;
+- operação: `C:\ProgramData\SQLBackupAndFTPAuto`;
+- preferências: `HKCU\Software\Alpha Software\SQLBackupAndFTP AutoRunner`;
+- registro da aplicação: `HKLM\Software\Alpha Software\SQLBackupAndFTP AutoRunner`.
+
+## Segurança
+
+Arquivos executados como `SYSTEM` são validados por hash e por ACL. Caminhos da CLI e seus ancestrais são recusados quando graváveis por identidades amplas. Manifesto, configuração e estado são escritos de forma atômica. A remoção não segue links e não opera fora das raízes registradas.
 
 ## Códigos relevantes do runner
 
 - `0`: execução concluída ou condição normal sem disparo;
 - `10`: falha consolidada;
-- `11`: falha de CLI;
-- `12`: todos ignorados pelo intervalo;
+- `11`: falha da CLI;
+- `12`: todos os jobs ignorados pelo intervalo;
 - `13`: outra execução manual já ativa;
 - `14`: job não executado após parada configurada;
 - `23`: CLI em caminho inseguro.

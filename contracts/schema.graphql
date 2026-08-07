@@ -1,0 +1,42 @@
+scalar JSON
+  scalar DateTime
+
+  type PageInfo { hasNextPage: Boolean!, endCursor: String }
+  type FleetSummary { organizations: Int!, clients: Int!, machines: Int!, agentsOnline: Int!, agentsOffline: Int!, jobs: Int!, failures24h: Int!, pendingCommands: Int! }
+  type Organization { id: ID!, name: String!, slug: String!, status: String!, createdAt: DateTime! }
+  type Client { id: ID!, organizationId: ID!, code: String, name: String!, status: String!, machinesTotal: Int!, jobsTotal: Int!, agentsOnline: Int!, createdAt: DateTime! }
+  type Machine { id: ID!, clientId: ID!, displayName: String!, hostname: String, osName: String, osVersion: String, architecture: String, agent: Agent, sqlBackup: SqlBackupInstallation, jobs: [Job!]!, lastExecution: Execution }
+  type Agent { id: ID!, status: String!, version: String!, channel: String!, protocolVersion: Int!, capabilities: JSON!, lastSeenAt: DateTime, connectedAt: DateTime, lastIp: String }
+  type SqlBackupInstallation { present: Boolean!, installPath: String, appVersion: String, cliVersion: String, serviceName: String, serviceStatus: String, discoverySource: String, discoveryConfidence: Int, detectedAt: DateTime }
+  type Job { id: ID!, machineId: ID!, nativeJobId: String, stableKey: String!, name: String!, jobType: String, isScheduled: Boolean, scheduleState: String, lastNativeRunAt: DateTime, source: String, confidence: Int, databases: JSON!, destinations: JSON!, active: Boolean!, lastSeenAt: DateTime! }
+  type Execution { id: ID!, jobId: ID, machineId: ID!, commandId: ID, source: String!, backupType: String, status: String!, startedAt: DateTime!, completedAt: DateTime, durationSeconds: Float, exitCode: Int, errorCategory: String, summary: String, cliOutput: String }
+  type Command { id: ID!, machineId: ID!, agentId: ID!, jobId: ID, type: String!, status: String!, payload: JSON!, createdAt: DateTime!, expiresAt: DateTime!, acceptedAt: DateTime, startedAt: DateTime, completedAt: DateTime, result: JSON, errorCode: String, errorSummary: String }
+  type AuditEvent { id: ID!, actorType: String!, actorId: String!, action: String!, resourceType: String, resourceId: String, decision: String!, summary: JSON!, createdAt: DateTime! }
+  type DomainEvent { id: ID!, organizationId: ID, eventType: String!, aggregateType: String, aggregateId: String, payload: JSON!, createdAt: DateTime! }
+
+  type ClientEdge { cursor: String!, node: Client! }
+  type ClientConnection { edges: [ClientEdge!]!, pageInfo: PageInfo! }
+  type MachineEdge { cursor: String!, node: Machine! }
+  type MachineConnection { edges: [MachineEdge!]!, pageInfo: PageInfo! }
+  type ExecutionEdge { cursor: String!, node: Execution! }
+  type ExecutionConnection { edges: [ExecutionEdge!]!, pageInfo: PageInfo! }
+  type AuditEdge { cursor: String!, node: AuditEvent! }
+  type AuditConnection { edges: [AuditEdge!]!, pageInfo: PageInfo! }
+
+  type Query {
+    me: JSON!
+    fleetSummary(organizationId: ID): FleetSummary!
+    organizations: [Organization!]!
+    clients(organizationId: ID, first: Int = 50, after: String): ClientConnection!
+    client(id: ID!): Client
+    machines(clientId: ID, organizationId: ID, first: Int = 50, after: String): MachineConnection!
+    machine(id: ID!): Machine
+    job(id: ID!): Job
+    executions(machineId: ID, jobId: ID, first: Int = 100, after: String): ExecutionConnection!
+    command(id: ID!): Command
+    audit(organizationId: ID, first: Int = 100, after: String): AuditConnection!
+  }
+
+  type Subscription {
+    events(organizationId: ID, eventTypes: [String!]): DomainEvent!
+  }

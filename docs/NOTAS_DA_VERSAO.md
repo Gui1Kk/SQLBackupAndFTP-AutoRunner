@@ -1,19 +1,27 @@
-# Notas da versão 2.2.5
+# SQLBackupAndFTP AutoRunner 2.3.5 RC
 
-A 2.2.5 corrige três defeitos confirmados em Windows na versão 2.2.4.
+## Motivo da candidata
 
-## Portable
+A 2.3.5 RC substitui a 2.3.0 RC depois de testes reais em Windows mostrarem permissões de leitura/execução inadequadas, falha de abertura do aplicativo, ícones ausentes/PowerShell na taskbar, layout cortado e remoção de automação retornando `-1`.
 
-O manifesto PE do launcher agora contém `requestedExecutionLevel level="asInvoker" uiAccess="false"`. O build usa `/manifestuac:no` junto de `/manifestinput`, evitando que o linker gere o atributo inválido `ms_asmv1:level`. Isso corrige a falha de contexto de ativação registrada no Visualizador de Eventos.
+## Correções principais
 
-## Setup e integridade
-
-O ZIP validado é extraído para `payload`. O `SetupHost.exe`, que é criado em tempo de execução, passa a ser compilado em `runtime`, fora do payload e fora da contagem de `SHA256SUMS.txt`. A verificação continua recusando qualquer arquivo injetado no payload.
-
-## Interface do instalador
-
-A barra lateral usa painéis responsivos, logo PNG validado, título e versão em linhas separadas e uma linha própria para cada etapa. Sequências literais `\r\n` não são usadas em textos visíveis.
+- ACL da aplicação reconstruída com `SYSTEM`/Administradores em controle total e identidades interativas/Shell em leitura e execução, sem conceder escrita ampla;
+- normalização recursiva das ACLs dos arquivos copiados;
+- atalho usa o ícone incorporado no launcher;
+- P/Invoke de DPI/AppUserModelID corrigido para o namespace realmente chamado;
+- AppUserModelID e propriedades de relançamento/ícone aplicados ao HWND do WinForms hospedado pelo PowerShell;
+- Setup e painel principal migrados para layouts responsivos com scroll;
+- tratamento do falso `ExitCode -1` por pós-condição da remoção;
+- detecção do SQLBackupAndFTP ampliada para Registro, serviços, processos, App Paths, atalhos, volumes locais limitados e seleção manual;
+- instalação permitida mesmo sem SQLBackupAndFTP, com aviso e botão de download oficial;
+- verificador integrado de atualizações com confirmação do usuário e atualização validada por SHA-256;
+- bootstrap elevado extrai o payload privado sob `Program Files`, não no TEMP gravável pelo usuário;
+- manutenção diferida, staging/rollback da automação e autocópia do desinstalador também usam scratch privilegiado sob `Program Files`;
+- o JSON de solicitação que atravessa o UAC é vinculado por SHA-256 e analisado a partir dos mesmos bytes verificados;
+- updater elevado baixa artefatos em `ProgramData` protegido;
+- falhas de rede não avançam o relógio da checagem automática.
 
 ## Estado
 
-Release Candidate para Windows x64. A promoção a estável exige instalação, abertura do Portable, tutorial, detecção, automação, reinicialização, backup e restauração reais.
+Release Candidate. Não promover a estável antes de concluir `HOMOLOGACAO_2_3_5_RC.md`, incluindo atualização a partir de versões anteriores, boot real, backup no destino e restauração.

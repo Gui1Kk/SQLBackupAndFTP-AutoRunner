@@ -1,58 +1,66 @@
-# Plano de testes 2.2.1
+# Plano de testes 2.3.5 RC
 
-## Automatizados e portáveis
+## Gates automatizados
 
-- análise lexical de PowerShell;
-- codificação, BOM, NUL e espaços finais;
-- revisão estática, profunda e adversarial independentes;
-- modelo comportamental;
-- fuzzing da máquina de estados;
-- regressões específicas da 2.2.1;
-- compilação nativa com avisos tratados como erro;
-- analisador estático Clang;
-- reprodutibilidade byte a byte dos binários e dos artefatos;
-- validação PE32+ x64 GUI e imports mínimos;
-- verificação do ZIP e do Setup autoextraível;
-- mutações de trailer, tamanho, payload, traversal, duplicidade, link e arquivo não declarado;
-- auditoria do XML WiX gerado estaticamente.
+- parser e regras estáticas;
+- revisão profunda e adversarial;
+- regressões históricas 2.2 e gate 2.3.5 RC;
+- modelo comportamental do runner;
+- modelo transacional com falha antes de cada etapa;
+- 100.000 iterações de fuzz da máquina de estados;
+- compilação C com `/W4 /WX`;
+- PE32+ x64, GUI, manifestos e mitigadores;
+- Setup autoextraível e inventário interno;
+- ataques de trailer, tamanho, truncamento, payload, traversal, duplicidade e injeção;
+- Portable com hash externo e inventário interno;
+- Source com inventário interno, completude e exclusão de segredos;
+- build duplo byte a byte.
 
-## Nativos em Windows
+## Windows nativo
 
-Executar `scripts\Invoke-QA.ps1 -Integration` como administrador para:
-
-- parser AST oficial do PowerShell;
+- parser AST oficial de todos os `.ps1` e `.psm1`;
 - fake CLI e runner real;
-- construção e fechamento da interface Windows Forms;
+- escrita JSON, manifesto e configuração;
 - ACL NTFS;
 - junction ancestral;
-- registro, execução e remoção de tarefa real;
-- configuração e estado reais.
+- tarefa real do Agendador;
+- interface e tutorial WinForms;
+- fechamento e reabertura da interface;
+- instalação, atualização, reparo e desinstalação.
 
-## Homologação com SQLBackupAndFTP
+## Matriz de upgrade
 
-1. instalar uma versão suportada do SQLBackupAndFTP;
-2. criar job para banco de teste;
-3. instalar o AutoRunner pelo Setup EXE;
-4. validar detecção por Registro, serviço, pasta padrão e seleção manual;
-5. configurar o job;
-6. testar chamada manual;
-7. verificar histórico e arquivo no destino;
-8. reiniciar o Windows e verificar o gatilho;
-9. testar intervalo mínimo por job;
-10. simular SQL Server e destino temporariamente indisponíveis;
-11. testar falha parcial com mais de um job;
-12. reparar automação;
-13. reparar aplicativo;
-14. atualizar sobre uma instalação existente;
-15. remover somente a automação;
-16. desinstalar o aplicativo;
-17. confirmar preservação dos jobs originais;
-18. restaurar o backup em ambiente de teste.
+Testar origem 2.2.0, 2.2.1, 2.2.2, 2.2.3, 2.2.4, 2.2.5 e 2.2.6 para 2.3.5 RC com:
 
-## MSI
+- aplicação fechada;
+- aplicação aberta;
+- PowerShell órfão;
+- tarefa ativa;
+- arquivo temporariamente bloqueado;
+- ACL padrão e alterada;
+- resíduo `.stage-*`;
+- resíduo `.rollback-*`;
+- interrupção antes e depois de cada renomeação.
 
-Antes de distribuir um MSI, é obrigatório compilar com WiX v4 em Windows, executar validação ICE aplicável, instalar/reparar/atualizar/remover com `msiexec`, confirmar limpeza e preservação durante upgrade e testar instalação silenciosa.
+Após qualquer falha deve existir uma versão antiga ou nova íntegra, nunca uma pasta principal vazia.
 
-## Gate de release
+## Homologação real
 
-A release para clientes só deve ser declarada homologada após os testes nativos e um backup/restauração reais. Testes portáveis aprovados não substituem Windows, Agendador, NTFS ou SQLBackupAndFTP reais.
+1. instalar o SQLBackupAndFTP e criar um job de banco de teste;
+2. instalar 2.3.5 RC limpa;
+3. executar Portable em pasta nova;
+4. configurar e testar o job;
+5. conferir histórico e arquivo;
+6. reiniciar o Windows e conferir o gatilho;
+7. simular SQL Server e destino indisponíveis;
+8. testar falha parcial com vários jobs;
+9. reparar automação e aplicativo;
+10. atualizar a partir de cada versão anterior disponível;
+11. remover automação;
+12. desinstalar aplicativo;
+13. confirmar preservação dos jobs originais;
+14. restaurar o backup em ambiente de teste.
+
+## Gate final
+
+A release só pode ser marcada como estável depois de CI verde e homologação em Windows x64 com backup, reinicialização e restauração reais.

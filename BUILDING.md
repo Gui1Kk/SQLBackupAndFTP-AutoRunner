@@ -1,30 +1,39 @@
-# Compilação
+# Compilação da versão 2.3.5 RC
 
-## Ambiente suportado
+## Plataformas
 
-A aplicação e os artefatos finais são exclusivamente **Windows x64**.
+Os artefatos finais são exclusivamente Windows x64. A geração dos PE nativos e dos ZIPs pode ser feita em Windows ou Linux com LLVM. Os testes de PowerShell, WinForms, ACL, Agendador e SQLBackupAndFTP exigem Windows x64.
 
-### Requisitos para Setup e Portable
+## Dependências
 
 - Python 3.11 ou superior;
-- arquivos nativos x64 já compilados em `native/`;
-- PowerShell 5.1 para executar os testes nativos.
+- `clang-cl` e `lld-link` no `PATH`;
+- Windows PowerShell 5.1 para QA nativo;
+- WiX Toolset v4 somente para MSI;
+- certificado de Code Signing somente para assinatura.
 
-### Requisitos para recompilar os launchers nativos
+Nenhum host é compilado na máquina do cliente. Os executáveis nativos são gerados durante o build oficial.
 
-- LLVM/Clang para Windows x64 ou Visual Studio Build Tools 2022;
-- Windows SDK;
-- os manifestos presentes em `native/`.
+## Build completo
 
-### Requisitos para MSI
+```powershell
+python .\build\Build-Native.py --root .
+python .\build\Build-Release.py --root . --output .\dist
+```
 
-- Windows x64;
-- .NET SDK compatível;
-- WiX Toolset v4 (`wix.exe`);
-- Python 3;
-- Windows PowerShell 5.1.
+Artefatos:
 
-## 1. Executar QA estático
+```text
+dist\SQLBackupAndFTP-AutoRunner-Setup-v2.3.5-RC.exe
+dist\SQLBackupAndFTP-AutoRunner-v2.3.5-RC-Portable.zip
+dist\SQLBackupAndFTP-AutoRunner-v2.3.5-RC-Source.zip
+dist\RELEASE-MANIFEST.json
+dist\SHA256SUMS.txt
+```
+
+Cada artefato possui um `.sha256.txt` próprio.
+
+## QA portátil
 
 ```powershell
 python .\tests\Static-QA.py
@@ -32,67 +41,50 @@ python .\tests\Deep-Review.py
 python .\tests\Adversarial-Review.py
 python .\tests\V22-Regression-QA.py
 python .\tests\V221-Regression-QA.py
+python .\tests\V235-Regression-QA.py
 python .\tests\Behavioral-Model.py
+python .\tests\Upgrade-Transaction-Model.py
 python .\tests\State-Machine-Fuzz.py --iterations 100000 --seed 20260806
 ```
 
-## 2. Executar QA nativo
-
-Abra Windows PowerShell 5.1 como administrador:
+## QA dos pacotes
 
 ```powershell
-powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\scripts\Invoke-QA.ps1 -Integration
-powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\scripts\Manager.ps1 -Action GuiSmoke
-powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\scripts\Manager.ps1 -Action TutorialSmoke
+python .\tests\Setup-Installer-QA.py .\dist\SQLBackupAndFTP-AutoRunner-Setup-v2.3.5-RC.exe
+python .\tests\Release-Package-QA.py .\dist\SQLBackupAndFTP-AutoRunner-v2.3.5-RC-Portable.zip .\dist\SQLBackupAndFTP-AutoRunner-v2.3.5-RC-Portable.zip.sha256.txt
+python .\tests\Source-Package-QA.py .\dist\SQLBackupAndFTP-AutoRunner-v2.3.5-RC-Source.zip .\dist\SQLBackupAndFTP-AutoRunner-v2.3.5-RC-Source.zip.sha256.txt
 ```
 
-## 3. Gerar Setup e Portable
+## QA no Windows
+
+Execute em Windows PowerShell 5.1 como administrador:
 
 ```powershell
-python .\build\Build-Release.py --root . --output .\dist
+powershell.exe -NoLogo -NoProfile -STA -ExecutionPolicy Bypass -File .\scripts\Invoke-QA.ps1 -Integration
+powershell.exe -NoLogo -NoProfile -STA -ExecutionPolicy Bypass -File .\scripts\Manager.ps1 -Action GuiSmoke
+powershell.exe -NoLogo -NoProfile -STA -ExecutionPolicy Bypass -File .\scripts\Manager.ps1 -Action TutorialSmoke
 ```
 
-Artefatos esperados:
+## Reprodutibilidade
 
-```text
-dist\SQLBackupAndFTP-AutoRunner-Setup-v2.2.1.exe
-dist\SQLBackupAndFTP-AutoRunner-v2.2.1-Portable.zip
-dist\RELEASE-MANIFEST.json
-```
+`Build-Native.py` fixa o timestamp PE e usa `/Brepro`. `Build-Release.py` ordena entradas, fixa timestamps ZIP e usa uma allowlist de produção. Duas execuções sobre a mesma árvore devem produzir bytes idênticos para Setup, Portable e Source.
 
-Cada artefato recebe um arquivo `.sha256.txt`.
-
-## 4. Validar os pacotes
+## MSI
 
 ```powershell
-python .\tests\Setup-Installer-QA.py .\dist\SQLBackupAndFTP-AutoRunner-Setup-v2.2.1.exe
-python .\tests\Release-Package-QA.py .\dist\SQLBackupAndFTP-AutoRunner-v2.2.1-Portable.zip .\dist\SQLBackupAndFTP-AutoRunner-v2.2.1-Portable.zip.sha256.txt
+powershell.exe -NoLogo -NoProfile -STA -ExecutionPolicy Bypass -File .\build\Build-MSI.ps1 -RunQA
 ```
 
-## 5. Gerar MSI x64
+O build MSI recompila os três executáveis nativos antes de montar o payload.
 
-Com WiX v4 no PATH:
+## Assinatura
 
 ```powershell
-powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\build\Build-MSI.ps1 -RunQA
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\build\Sign-Release.ps1 -Path .\dist\SQLBackupAndFTP-AutoRunner-Setup-v2.3.5-RC.exe -CertificateThumbprint SEU_THUMBPRINT
 ```
 
-Artefato esperado:
+Nunca versione PFX, senha, certificado privado ou chave privada.
 
-```text
-dist\SQLBackupAndFTP-AutoRunner-v2.2.1-x64.msi
-```
+## Gate de publicação
 
-## 6. Assinar a release
-
-A assinatura exige certificado de Code Signing da Alpha Software com chave privada:
-
-```powershell
-powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\build\Sign-Release.ps1 -Path .\dist\SQLBackupAndFTP-AutoRunner-Setup-v2.2.1.exe -CertificateThumbprint SEU_THUMBPRINT
-```
-
-Nunca coloque certificado, PFX, senha ou chave privada no repositório.
-
-## Critérios de publicação
-
-Uma release só deve ser marcada como estável depois de parser AST sem erro, smoke test da GUI e tutorial, instalação/reparo/remoção em Windows x64, ACL NTFS e Agendador reais, detecção do SQLBackupAndFTP, backup confirmado no histórico e destino, reinicialização real, restauração, hashes e assinatura quando disponível.
+A release só pode ser promovida após CI verde, instalação limpa, upgrade de versões anteriores, reparo, desinstalação, ACL, Agendador, reinicialização, backup no destino e restauração real.
