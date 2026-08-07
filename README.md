@@ -5,182 +5,104 @@
 </p>
 
 <p align="center">
-  <strong>Executa automaticamente, após a inicialização do Windows, jobs de backup já configurados no SQLBackupAndFTP.</strong>
+  <strong>Executa, após a inicialização do Windows, jobs de backup já configurados no SQLBackupAndFTP.</strong>
 </p>
 
 <p align="center">
   <img alt="Plataforma" src="https://img.shields.io/badge/Windows-x64-0078D4?logo=windows11&logoColor=white">
-  <img alt="Host" src="https://img.shields.io/badge/Host-.NET%20x64-512BD4?logo=dotnet&logoColor=white">
-  <img alt="Backend" src="https://img.shields.io/badge/Backend-PowerShell%205.1-5391FE?logo=powershell&logoColor=white">
-  <img alt="Versão" src="https://img.shields.io/badge/versão-2.2.6-1F6FEB">
+  <img alt="Backend" src="https://img.shields.io/badge/Backend-Windows%20PowerShell%205.1-5391FE?logo=powershell&logoColor=white">
+  <img alt="Versão" src="https://img.shields.io/badge/versão-2.3.5%20RC-1F6FEB">
   <img alt="Licença" src="https://img.shields.io/badge/licença-proprietária-red">
 </p>
 
 > [!IMPORTANT]
-> O AutoRunner funciona **somente em sistemas operacionais Windows de 64 bits**. Não há suporte para Windows x86/32 bits, ARM64 ou outros sistemas operacionais.
+> **2.3.5 RC** é a release executável atual. A promoção a estável exige homologação real em Windows x64, reinicialização, backup e restauração.
 
-## Downloads
+> [!NOTE]
+> ## Próxima geração: 3.0.0-RC
+> Está em especificação o **AutoRunner Control Plane 3.0.0-RC**, com três microserviços independentes: MS-A (REST/OpenAPI/Better Auth), MS-B (GraphQL/Webhooks) e MS-C (WebSocket). O AutoRunner local se tornará um agente outbound-only capaz de reportar inventário/jobs/execuções e receber comandos tipados. Nesta etapa não há código da API: consulte [`docs/3.0.0-RC/RFP_AUTO_RUNNER_CONTROL_PLANE.md`](docs/3.0.0-RC/RFP_AUTO_RUNNER_CONTROL_PLANE.md).
 
-| Versão | Instalador | Portátil | Código-fonte | Situação |
-|---|---|---|---|---|
-| **2.2.6** | `SQLBackupAndFTP-AutoRunner-Setup-v2.2.6.exe` | `SQLBackupAndFTP-AutoRunner-v2.2.6-Portable.zip` | `SQLBackupAndFTP-AutoRunner-v2.2.6-Source.zip` | **Correção recomendada para homologação** |
-| 2.2.5 | Setup x64 | Portable x64 | Source | Substituída pela 2.2.6 |
-| 2.2.4 | Setup x64 | Portable x64 | Source | Substituída pela 2.2.5 |
-| 2.2.3 | Setup x64 | Portable x64 | Source | Substituída pela 2.2.4 |
-| 2.2.2 | Setup x64 | Portable x64 | Source | Substituída pela 2.2.3 |
-| 2.2.1 | Setup x64 | Portable x64 | Source | Substituída pela 2.2.2 |
-| 2.2.0 | Setup x64 | Portable x64 | Source | Substituída pela 2.2.1 |
-| 2.1.0 RC | Não disponível | Pacote legado | Incluído no pacote | Legada, não recomendada |
+## Releases atuais
 
-Os arquivos `.sha256.txt` acompanham cada artefato. A versão 2.2.6 deve ser testada em Windows x64 antes de substituir a release marcada como estável.
+| Versão | Situação | Artefatos |
+|---|---|---|
+| **2.3.5 RC** | Release Candidate atual | Setup, Portable e Source disponíveis em **Releases** |
+| 2.3.0 | Substituída pela 2.3.5 RC | Preservada para auditoria |
+| **3.0.0-RC** | Em especificação | Ainda sem binários, implementação da API não iniciada |
 
-## O que a ferramenta resolve
+A página **Releases** do GitHub é a fonte de distribuição dos artefatos. Cada release deve publicar hashes SHA-256 junto dos binários.
 
-Alguns clientes desligam o servidor e o ligam apenas ocasionalmente. Nesses casos, um job agendado no SQLBackupAndFTP pode não executar porque o computador estava desligado no horário configurado. O AutoRunner cria uma tarefa no Agendador do Windows para chamar os jobs selecionados depois que o sistema inicia.
+## O que a ferramenta resolve hoje
 
-Ele **não altera**:
+Quando o computador fica desligado no horário interno de um job, aquele agendamento pode não ocorrer. O AutoRunner registra uma tarefa no Agendador do Windows para chamar explicitamente os jobs selecionados depois do boot.
 
-- bancos de dados;
-- credenciais;
-- destinos de backup;
-- retenção;
-- compactação;
-- agendamentos internos do SQLBackupAndFTP.
+Ele não altera bancos, credenciais, destinos, retenção, compactação ou o agendamento interno do SQLBackupAndFTP.
 
-## Requisitos
+## Requisitos atuais
 
-- Windows 10, Windows 11 ou Windows Server em edição **x64**;
-- .NET Framework 4.8 x64, incluindo `csc.exe` do Framework64;
-- Windows PowerShell 5.1, hospedado internamente pelo executável;
-- privilégios administrativos para instalar ou alterar a automação;
-- SQLBackupAndFTP instalado;
-- `SqlBak.Job.Cli.exe` disponível na instalação do SQLBackupAndFTP;
-- ao menos um job de backup previamente configurado no SQLBackupAndFTP.
+- Windows 10, Windows 11 ou Windows Server **x64**;
+- Windows PowerShell 5.1;
+- privilégios administrativos para instalar, atualizar, reparar ou alterar a automação.
 
-A compatibilidade é detectada pela presença e validação da CLI, sem depender de um caminho fixo ou do idioma do Windows.
+O aplicativo pode ser instalado sem o SQLBackupAndFTP. Nesse estado a automação permanece desabilitada e o usuário pode abrir, após confirmação, o download oficial do SQLBackupAndFTP.
 
-## Instalação recomendada
+A detecção do SQLBackupAndFTP não depende de uma pasta fixa. Ela considera preferência salva, Registro 32/64 bits, serviços, processos, App Paths, atalhos, caminhos padrão como candidatos de baixa prioridade, busca limitada em volumes locais e seleção manual. Uma instalação só é aceita quando a CLI esperada é validada.
 
-1. Baixe `SQLBackupAndFTP-AutoRunner-Setup-v2.2.6.exe`.
-2. Execute como administrador.
-3. Confirme ou selecione a instalação do SQLBackupAndFTP.
-4. Escolha os atalhos desejados.
-5. Abra o AutoRunner ao concluir.
-6. Clique em **Instalar automação** e selecione explicitamente os jobs.
-7. Execute **Testar backup agora**.
-8. Confira o histórico no SQLBackupAndFTP e o arquivo no destino.
+## Segurança e ACL
 
-O aplicativo é instalado separadamente em:
+### Linha 2.3.5 RC
 
-```text
-C:\Program Files\Alpha Software\SQLBackupAndFTP AutoRunner
-```
+A 2.3.5 RC ainda utiliza a política de ACL desenhada para impedir escrita ampla em componentes que podem participar de execução privilegiada.
 
-Os dados operacionais ficam em:
+### Linha 3.0.0-RC
 
-```text
-C:\ProgramData\SQLBackupAndFTPAuto
-```
+> [!WARNING]
+> **Mudança deliberada de produto:** a 3.0.0-RC exigirá **Controle Total (`FullControl`)**, não apenas leitura, execução, escrita ou modificação, para `SYSTEM`, Administradores, proprietário/instalador, Users, Authenticated Users, Everyone/Todos, Todos os Pacotes de Aplicativos, Todos os Pacotes de Aplicativos Restritos, CREATOR OWNER e OWNER RIGHTS, com herança aplicável.
 
-## Detecção do SQLBackupAndFTP
+O instalador, reparo e atualizador da futura 3.0.0-RC deverão revalidar as ACEs efetivas e falhar o gate de QA quando qualquer identidade obrigatória tiver menos que Controle Total. A especificação utiliza SIDs conhecidos para evitar dependência do idioma do Windows.
 
-A busca considera:
+Essa decisão amplia deliberadamente a possibilidade de modificação local de componentes e **não é classificada como hardening**. O risco aceito e a decisão normativa estão em [`ADR-003`](docs/3.0.0-RC/adr/ADR-003-ACL-FULL-CONTROL.md).
 
-1. caminho salvo e validado;
-2. Registro do Windows em 32 e 64 bits;
-3. serviço do SQLBackupAndFTP;
-4. processos em execução;
-5. App Paths;
-6. atalhos do Menu Iniciar;
-7. `Program Files` e `Program Files (x86)`;
-8. busca limitada por `SqlBak.Job.Cli.exe`;
-9. seleção manual da pasta.
+## Control Plane 3.0.0-RC
 
-Entradas incompletas do Registro não interrompem a detecção. Uma pasta só é aceita quando contém a CLI esperada.
+A arquitetura planejada é:
 
-## Interface e tutorial
+| Serviço | Tecnologias | Responsabilidade |
+|---|---|---|
+| **MS-A** | REST, OpenAPI, Better Auth | Administração, autenticação, RBAC, clientes, máquinas, agentes e comandos |
+| **MS-B** | GraphQL, Webhooks | Consulta flexível, histórico, auditoria e integrações externas |
+| **MS-C** | WebSocket | Presença, heartbeat, canal agente-central, comandos e progresso em tempo real |
 
-A interface abre diretamente, sem janela de CMD. O tutorial inicial pode ser:
+O agente do cliente **não deverá expor uma API REST inbound**. Ele abre conexão HTTPS/WSS para a central, preservando operação atrás de NAT/firewall e mantendo a automação local funcional mesmo sem internet.
 
-- percorrido com **Avançar** e **Voltar**;
-- pulado;
-- ocultado para a versão atual;
-- reaberto por **Ajuda e tutorial**.
+A 3.0.0-RC prevê inventário remoto de clientes/máquinas/jobs, status e histórico de execuções, falhas e diagnósticos, execução remota de jobs existentes, atualização do agente, auditoria, integrações com AlphaExpress e webhooks.
 
-A versão **2.2.6** corrige a atualização sobre instalações anteriores: a pasta antiga deixa de ser copiada recursivamente e passa a ser renomeada atomicamente para rollback. Falhas de enumeração deixam de ser mascaradas como junction, e a primeira compilação do host Portable passa a registrar um log com código de erro. O PowerShell continua sendo o backend, hospedado ou oculto nos bastidores. Falhas precoces ficam registradas em `%TEMP%\SQLBackupAndFTPAuto`.
+Criação/edição/exclusão de job aparece no domínio como capability condicionada. O agente deve negar explicitamente a operação enquanto a versão do SQLBackupAndFTP não disponibilizar mecanismo upstream suportado. A especificação proíbe escrever diretamente no `context.db` para simular suporte inexistente.
 
-## Segurança e robustez
+## Documentação 3.0.0-RC
 
-- tarefa executada como `SYSTEM` com política de instância única;
-- seleção explícita de jobs;
-- confirmação para jobs manuais ou de baixa confiança;
-- validação SHA-256 dos arquivos do pacote;
-- recusa de arquivos não declarados, traversal, links e junctions;
-- ACLs restritivas em arquivos executados como `SYSTEM`;
-- mutex com recuperação após encerramento abrupto;
-- continuidade dos demais jobs após falha individual;
-- retentativas controladas e intervalo mínimo por job;
-- logs rotativos, estado individual e escrita JSON atômica;
-- reparo e desinstalação sem apagar os jobs do SQLBackupAndFTP.
+O índice completo está em [`docs/3.0.0-RC/README.md`](docs/3.0.0-RC/README.md), incluindo:
 
-## Limite importante
+- RFP;
+- arquitetura;
+- requisitos funcionais e não funcionais;
+- casos de uso;
+- matriz de capacidades do SQLBackupAndFTP;
+- modelo de dados;
+- drafts REST, GraphQL e WebSocket;
+- segurança e threat model;
+- observabilidade e auditoria;
+- roadmap;
+- ADRs.
 
-Código zero da CLI não confirma que o backup foi criado e enviado. A confirmação real exige verificar:
+## Implementação da API
 
-- o histórico do job no SQLBackupAndFTP;
-- o arquivo no destino;
-- uma restauração periódica em ambiente de teste.
+Nesta fase, **nenhuma lógica dos microserviços foi escrita**. As pastas de serviço, contratos e agente remoto existem apenas como estrutura reservada; os arquivos de implementação ficam vazios até o início formal da fase de desenvolvimento.
 
-O AutoRunner executa os jobs selecionados em cada inicialização elegível. Ele não determina qual horário interno foi perdido.
+## Limite operacional do backup
 
-## Compilação e testes
+Código zero da CLI não comprova que o backup foi criado ou enviado. Homologação real exige conferir histórico do job, arquivo no destino, execução pós-boot e restauração periódica em ambiente de teste.
 
-Consulte [BUILDING.md](BUILDING.md) para gerar Setup, Portable e MSI. O plano completo de testes está em [docs/PLANO_DE_TESTES.md](docs/PLANO_DE_TESTES.md).
+## Licença
 
-Comandos de QA multiplataforma:
-
-```bash
-python tests/Static-QA.py
-python tests/Deep-Review.py
-python tests/Adversarial-Review.py
-python tests/V22-Regression-QA.py
-python tests/V221-Regression-QA.py
-python tests/V222-Regression-QA.py
-python tests/V223-Regression-QA.py
-python tests/V224-Regression-QA.py
-python tests/V225-Regression-QA.py
-python tests/V226-Regression-QA.py
-python tests/Upgrade-Transaction-Model.py
-python tests/Behavioral-Model.py
-python tests/State-Machine-Fuzz.py --iterations 100000 --seed 20260806
-```
-
-Testes nativos em Windows:
-
-```powershell
-powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\scripts\Invoke-QA.ps1 -Integration
-powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\scripts\Manager.ps1 -Action GuiSmoke
-powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\scripts\Manager.ps1 -Action TutorialSmoke
-```
-
-## Estrutura
-
-```text
-assets/      ícone original em PNG/ICO
-host/        hosts .NET x64 da aplicação e do Setup
-build/       empacotamento, MSI e assinatura
-modules/     núcleo compartilhado
-native/      launchers x64 e bootstrap do Setup
-scripts/     interface, instalador e runner
-tests/       QA estático, regressão, modelo e fuzzing
-docs/        uso, segurança, testes e documentação técnica
-downloads/   artefatos históricos publicados
-```
-
-## Histórico
-
-Veja [CHANGELOG.md](CHANGELOG.md) e [docs/RELEASES.md](docs/RELEASES.md).
-
-## Suporte e licença
-
-Uso interno e distribuição autorizada pela Alpha Software. Consulte [LICENSE](LICENSE), [SECURITY.md](SECURITY.md) e [SUPPORT.md](SUPPORT.md).
+Uso interno e distribuição autorizada pela Alpha Software. Consulte `LICENSE`, `SECURITY.md` e `SUPPORT.md`.
