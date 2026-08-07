@@ -9,13 +9,13 @@ A implementação funcional foi concluída e empacotada a partir da árvore can�
 - Portable: `SQLBackupAndFTP-AutoRunner-v3.0.0-RC-Portable.zip`
   - SHA-256: `BC83BF582DABF50CD92857EA62EFD94702DD7F8D676305C1EF5D2CBDFEC921C8`
 - Source: `SQLBackupAndFTP-AutoRunner-v3.0.0-RC-Source.zip`
-  - SHA-256: `D736D77F9B89914C4873E6EBFA3346F3B14E0BDE525245EB050FD19AE3C34D48`
+  - SHA-256: `7B8D153F6177CF3D63F6A6C4AA7C2F5DDC9EABFD40EA4421C3783A00E782E6D4`
 - Control Plane: `SQLBackupAndFTP-AutoRunner-v3.0.0-RC-ControlPlane.zip`
-  - SHA-256: `7F78BC2D56C2E4EC76AB8C2B3E1530261CCB27FF6B3EF8427BD16C559A36AC7C`
+  - SHA-256: `35210D05F8A268796290D5FBA3FF1F7B4D0C1AEACD8EC006678F3747A0B29ED3`
 
 ## QA executado no ambiente de build
 
-- 464 verificações automatizadas reportadas aprovadas, 0 falhas;
+- 465 verificações automatizadas reportadas aprovadas, 0 falhas;
 - 100.000 cenários aleatórios do upgrade transacional;
 - 100.000 cenários aleatórios da máquina de estados do runner;
 - Setup, Portable, Source e Control Plane gerados de forma reproduzível;
