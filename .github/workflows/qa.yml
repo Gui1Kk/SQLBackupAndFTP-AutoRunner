@@ -1,8 +1,11 @@
-name: QA 2.3.5 RC
+name: QA 3.0.0 RC
 
 on:
   push:
-    branches: [main, 'release/**']
+    branches:
+      - main
+      - 'feature/**'
+      - 'release/**'
   pull_request:
   workflow_dispatch:
 
@@ -10,36 +13,62 @@ permissions:
   contents: read
 
 jobs:
-  portable-and-packaging:
+  linux-build-and-packaging:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+
+      - name: Install locked Node dependencies
+        run: npm ci --ignore-scripts --no-audit --no-fund
+
       - name: Locate LLVM
         shell: bash
         run: |
           command -v clang-cl
           command -v lld-link
+
       - name: Build native launchers
         run: python build/Build-Native.py --root .
-      - name: Static and model suites
+
+      - name: Static, regression, Control Plane and model suites
         run: |
           python tests/Static-QA.py
           python tests/Deep-Review.py
           python tests/Adversarial-Review.py
+          python tests/V22-Regression-QA.py
+          python tests/V221-Regression-QA.py
+          python tests/V230-Regression-QA.py
           python tests/V235-Regression-QA.py
+          python tests/V300-Regression-QA.py
+          python tests/ControlPlane-Syntax-QA.py
+          python tests/ControlPlane-Contract-QA.py
           python tests/Behavioral-Model.py
           python tests/Upgrade-Transaction-Model.py
-          python tests/State-Machine-Fuzz.py --iterations 100000 --seed 20260806
+          python tests/State-Machine-Fuzz.py --iterations 100000 --seed 20260807
+
       - name: Build release artifacts
         run: python build/Build-Release.py --root . --output dist
-      - name: Validate artifacts
+
+      - name: Validate 3.0.0-RC artifacts
         run: |
-          python tests/Setup-Installer-QA.py dist/SQLBackupAndFTP-AutoRunner-Setup-v2.3.5-RC.exe
-          python tests/Release-Package-QA.py dist/SQLBackupAndFTP-AutoRunner-v2.3.5-RC-Portable.zip dist/SQLBackupAndFTP-AutoRunner-v2.3.5-RC-Portable.zip.sha256.txt
-          python tests/Source-Package-QA.py dist/SQLBackupAndFTP-AutoRunner-v2.3.5-RC-Source.zip dist/SQLBackupAndFTP-AutoRunner-v2.3.5-RC-Source.zip.sha256.txt
+          python tests/Setup-Installer-QA.py dist/SQLBackupAndFTP-AutoRunner-Setup-v3.0.0-RC.exe
+          python tests/Release-Package-QA.py dist/SQLBackupAndFTP-AutoRunner-v3.0.0-RC-Portable.zip dist/SQLBackupAndFTP-AutoRunner-v3.0.0-RC-Portable.zip.sha256.txt
+          python tests/Source-Package-QA.py dist/SQLBackupAndFTP-AutoRunner-v3.0.0-RC-Source.zip dist/SQLBackupAndFTP-AutoRunner-v3.0.0-RC-Source.zip.sha256.txt
+
+      - name: Ensure Source package contains dependency lock
+        shell: bash
+        run: |
+          unzip -l dist/SQLBackupAndFTP-AutoRunner-v3.0.0-RC-Source.zip | grep -F 'package-lock.json'
+
       - name: Reproducible package check
         shell: bash
         run: |
@@ -47,12 +76,13 @@ jobs:
           rm -rf dist
           python build/Build-Native.py --root .
           python build/Build-Release.py --root . --output dist
-          cmp dist-first/SQLBackupAndFTP-AutoRunner-Setup-v2.3.5-RC.exe dist/SQLBackupAndFTP-AutoRunner-Setup-v2.3.5-RC.exe
-          cmp dist-first/SQLBackupAndFTP-AutoRunner-v2.3.5-RC-Portable.zip dist/SQLBackupAndFTP-AutoRunner-v2.3.5-RC-Portable.zip
-          cmp dist-first/SQLBackupAndFTP-AutoRunner-v2.3.5-RC-Source.zip dist/SQLBackupAndFTP-AutoRunner-v2.3.5-RC-Source.zip
+          cmp dist-first/SQLBackupAndFTP-AutoRunner-Setup-v3.0.0-RC.exe dist/SQLBackupAndFTP-AutoRunner-Setup-v3.0.0-RC.exe
+          cmp dist-first/SQLBackupAndFTP-AutoRunner-v3.0.0-RC-Portable.zip dist/SQLBackupAndFTP-AutoRunner-v3.0.0-RC-Portable.zip
+          cmp dist-first/SQLBackupAndFTP-AutoRunner-v3.0.0-RC-Source.zip dist/SQLBackupAndFTP-AutoRunner-v3.0.0-RC-Source.zip
+
       - uses: actions/upload-artifact@v4
         with:
-          name: SQLBackupAndFTP-AutoRunner-v2.3.5-RC
+          name: SQLBackupAndFTP-AutoRunner-v3.0.0-RC
           path: dist/
           if-no-files-found: error
 
@@ -60,33 +90,52 @@ jobs:
     runs-on: windows-2022
     steps:
       - uses: actions/checkout@v4
+
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+
+      - name: Install locked Node dependencies
+        shell: powershell
+        run: npm ci --ignore-scripts --no-audit --no-fund
+
       - name: Add LLVM to PATH
         shell: powershell
         run: |
           $llvm = 'C:\Program Files\LLVM\bin'
           if (-not (Test-Path $llvm)) { throw "LLVM não encontrado em $llvm" }
           $llvm | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+
       - name: Build native on Windows
         shell: powershell
         run: python build\Build-Native.py --root .
+
       - name: PowerShell AST and integration
         shell: powershell
         run: powershell.exe -NoLogo -NoProfile -STA -ExecutionPolicy Bypass -File .\scripts\Invoke-QA.ps1 -Integration
+
       - name: GUI smoke
         shell: powershell
         run: powershell.exe -NoLogo -NoProfile -STA -ExecutionPolicy Bypass -File .\scripts\Manager.ps1 -Action GuiSmoke
+
       - name: Tutorial smoke
         shell: powershell
         run: powershell.exe -NoLogo -NoProfile -STA -ExecutionPolicy Bypass -File .\scripts\Manager.ps1 -Action TutorialSmoke
-      - name: Regression and package build
+
+      - name: 3.0 regression and package build
         shell: powershell
         run: |
           python tests\V235-Regression-QA.py
+          python tests\V300-Regression-QA.py
+          python tests\ControlPlane-Syntax-QA.py
+          python tests\ControlPlane-Contract-QA.py
           python tests\Upgrade-Transaction-Model.py
           python build\Build-Release.py --root . --output dist
-          python tests\Setup-Installer-QA.py dist\SQLBackupAndFTP-AutoRunner-Setup-v2.3.5-RC.exe
-          python tests\Release-Package-QA.py dist\SQLBackupAndFTP-AutoRunner-v2.3.5-RC-Portable.zip dist\SQLBackupAndFTP-AutoRunner-v2.3.5-RC-Portable.zip.sha256.txt
-          python tests\Source-Package-QA.py dist\SQLBackupAndFTP-AutoRunner-v2.3.5-RC-Source.zip dist\SQLBackupAndFTP-AutoRunner-v2.3.5-RC-Source.zip.sha256.txt
+          python tests\Setup-Installer-QA.py dist\SQLBackupAndFTP-AutoRunner-Setup-v3.0.0-RC.exe
+          python tests\Release-Package-QA.py dist\SQLBackupAndFTP-AutoRunner-v3.0.0-RC-Portable.zip dist\SQLBackupAndFTP-AutoRunner-v3.0.0-RC-Portable.zip.sha256.txt
+          python tests\Source-Package-QA.py dist\SQLBackupAndFTP-AutoRunner-v3.0.0-RC-Source.zip dist\SQLBackupAndFTP-AutoRunner-v3.0.0-RC-Source.zip.sha256.txt

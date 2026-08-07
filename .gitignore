@@ -395,3 +395,18 @@ appsettings.Development.local.json
 !**/*.json
 !**/*.html
 !**/*.css
+
+# ------------------------------------------------------------
+# AutoRunner source paths that resemble generated output
+# ------------------------------------------------------------
+# The root /build directory contains release/build SOURCE code.
+!/build/
+!/build/**
+
+# PostgreSQL bootstrap schema is source and must be versioned.
+!deploy/postgres/
+!deploy/postgres/init/
+!deploy/postgres/init/*.sql
+
+# Generated only inside Source release packages, not a working-tree source file.
+SOURCE-SHA256SUMS.txt

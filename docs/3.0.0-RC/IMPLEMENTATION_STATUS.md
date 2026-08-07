@@ -21,19 +21,17 @@ A implementação funcional foi concluída e empacotada a partir da árvore can�
 - Setup, Portable, Source e Control Plane gerados de forma reproduzível;
 - 19 mutações/ataques estruturais contra o Setup rejeitados.
 
-## Limite do conector GitHub usado nesta execução
+## Estado da árvore Git
 
-O conector autenticado disponível nesta sessão permite criar/editar arquivos de texto e objetos Git, mas não oferece importação em massa de uma árvore local ou upload direto de um ZIP local para expandi-lo no repositório. Portanto, este PR NÃO deve ser mergeado enquanto os arquivos vazios do skeleton não forem substituídos pela árvore contida no Source final.
+A árvore funcional da 3.0.0-RC foi importada para a branch de desenvolvimento. Antes do merge em `main`, o gate exige:
 
-### Importação manual segura
+- build scripts presentes em `build/`;
+- schema PostgreSQL presente em `deploy/postgres/init/`;
+- `package-lock.json` versionado e Docker usando `npm ci`;
+- QA 3.0.0-RC verde no GitHub Actions;
+- ausência de `.env`, segredos, `node_modules`, `dist` e artefatos transitórios.
 
-1. Baixe e confira o SHA-256 do Source acima.
-2. Extraia `SQLBackupAndFTP-AutoRunner-v3.0.0-RC-Source.zip`.
-3. Copie o conteúdo da pasta raiz extraída sobre um checkout da branch `feature/3.0.0-rc-control-plane`.
-4. Não copie `dist`, `test-results`, `.env`, segredos ou binários gerados fora da allowlist do Source.
-5. Execute os gates descritos no README.
-6. Commit/push na mesma branch.
-7. Só então marque o PR #3 como pronto e faça merge para `main`.
+A homologação real em Windows/Docker/SQLBackupAndFTP continua sendo requisito para promoção da RC a estável, mas não impede que a implementação RC seja integrada à `main` após os gates de código/CI.
 
 ## Homologação ainda obrigatória
 
