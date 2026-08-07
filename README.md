@@ -1,108 +1,155 @@
 # SQLBackupAndFTP AutoRunner
 
+<p align="center"><img src="assets/AutoRunner.png" width="96" alt="SQLBackupAndFTP AutoRunner"></p>
+<p align="center"><strong>Automação local de backups + Control Plane para observabilidade e execução remota de jobs do SQLBackupAndFTP.</strong></p>
 <p align="center">
-  <img src="assets/AutoRunner.png" width="96" alt="Ícone do SQLBackupAndFTP AutoRunner">
-</p>
-
-<p align="center">
-  <strong>Executa, após a inicialização do Windows, jobs de backup já configurados no SQLBackupAndFTP.</strong>
-</p>
-
-<p align="center">
-  <img alt="Plataforma" src="https://img.shields.io/badge/Windows-x64-0078D4?logo=windows11&logoColor=white">
-  <img alt="Backend" src="https://img.shields.io/badge/Backend-Windows%20PowerShell%205.1-5391FE?logo=powershell&logoColor=white">
-  <img alt="Versão" src="https://img.shields.io/badge/versão-2.3.5%20RC-1F6FEB">
-  <img alt="Licença" src="https://img.shields.io/badge/licença-proprietária-red">
+  <img alt="Windows Agent" src="https://img.shields.io/badge/Agent-Windows%20x64-0078D4">
+  <img alt="Control Plane" src="https://img.shields.io/badge/Control%20Plane-Docker-2496ED">
+  <img alt="Node" src="https://img.shields.io/badge/Node-24%20LTS-339933">
+  <img alt="Version" src="https://img.shields.io/badge/version-3.0.0--RC-1F6FEB">
 </p>
 
 > [!IMPORTANT]
-> **2.3.5 RC** é a release executável atual. A promoção a estável exige homologação real em Windows x64, reinicialização, backup e restauração.
+> **3.0.0-RC é Release Candidate.** O código, contratos e pacotes passaram pelos gates automatizados disponíveis no ambiente de build, mas ainda exigem homologação real em Windows, Docker/WSL2, PostgreSQL e SQLBackupAndFTP antes de uso em produção.
 
-> [!NOTE]
-> ## Próxima geração: 3.0.0-RC
-> Está em especificação o **AutoRunner Control Plane 3.0.0-RC**, com três microserviços independentes: MS-A (REST/OpenAPI/Better Auth), MS-B (GraphQL/Webhooks) e MS-C (WebSocket). O AutoRunner local se tornará um agente outbound-only capaz de reportar inventário/jobs/execuções e receber comandos tipados. Nesta etapa não há código da API: consulte [`docs/3.0.0-RC/RFP_AUTO_RUNNER_CONTROL_PLANE.md`](docs/3.0.0-RC/RFP_AUTO_RUNNER_CONTROL_PLANE.md).
+## O que é a 3.0
 
-## Releases atuais
+A linha 3 transforma o AutoRunner em duas partes complementares:
 
-| Versão | Situação | Artefatos |
-|---|---|---|
-| **2.3.5 RC** | Release Candidate atual | Setup, Portable e Source disponíveis em **Releases** |
-| 2.3.0 | Substituída pela 2.3.5 RC | Preservada para auditoria |
-| **3.0.0-RC** | Em especificação | Ainda sem binários, implementação da API não iniciada |
+1. **AutoRunner Windows + Remote Agent**: continua executando a automação local após boot e, opcionalmente, abre conexão outbound HTTPS/WSS para a central. Nenhuma porta precisa ser exposta na máquina do cliente.
+2. **AutoRunner Control Plane**: painel central + REST + GraphQL + Webhooks + WebSocket, executados em containers Linux.
 
-A página **Releases** do GitHub é a fonte de distribuição dos artefatos. Cada release deve publicar hashes SHA-256 junto dos binários.
+Arquitetura:
 
-## O que a ferramenta resolve hoje
+```text
+Operador / AlphaExpress
+        |
+      Caddy
+   /     |      \
+MS-A    MS-B    MS-C
+REST   GraphQL   WSS
+   \      |      /
+      PostgreSQL
+          |
+       Internet
+          |
+ AutoRunner Agent -> SQLBackupAndFTP
+```
 
-Quando o computador fica desligado no horário interno de um job, aquele agendamento pode não ocorrer. O AutoRunner registra uma tarefa no Agendador do Windows para chamar explicitamente os jobs selecionados depois do boot.
+PostgreSQL é a fonte de verdade de comandos, inventário, auditoria e outbox. A entrega ao agente é assíncrona e tolera reconexão.
 
-Ele não altera bancos, credenciais, destinos, retenção, compactação ou o agendamento interno do SQLBackupAndFTP.
+## Artefatos 3.0.0-RC
 
-## Requisitos atuais
+- `SQLBackupAndFTP-AutoRunner-Setup-v3.0.0-RC.exe`: instalação/update/reparo do aplicativo Windows.
+- `SQLBackupAndFTP-AutoRunner-v3.0.0-RC-Portable.zip`: execução portátil.
+- `SQLBackupAndFTP-AutoRunner-v3.0.0-RC-Source.zip`: fonte auditável completa.
+- `SQLBackupAndFTP-AutoRunner-v3.0.0-RC-ControlPlane.zip`: pacote focado no deploy Docker da central.
+- `SQLBackupAndFTP-AutoRunner-v3.0.0-RC-QA-Evidence.zip`: relatórios e evidências automatizadas.
 
-- Windows 10, Windows 11 ou Windows Server **x64**;
-- Windows PowerShell 5.1;
-- privilégios administrativos para instalar, atualizar, reparar ou alterar a automação.
+## Control Plane
 
-O aplicativo pode ser instalado sem o SQLBackupAndFTP. Nesse estado a automação permanece desabilitada e o usuário pode abrir, após confirmação, o download oficial do SQLBackupAndFTP.
+### MS-A: REST / OpenAPI / Better Auth
 
-A detecção do SQLBackupAndFTP não depende de uma pasta fixa. Ela considera preferência salva, Registro 32/64 bits, serviços, processos, App Paths, atalhos, caminhos padrão como candidatos de baixa prioridade, busca limitada em volumes locais e seleção manual. Uma instalação só é aceita quando a CLI esperada é validada.
+Responsável por autenticação, RBAC, organizações, clientes, máquinas, enrollment, inventário, comandos, execuções, webhooks, API keys e tokens de realtime. Swagger/OpenAPI fica em `/docs`.
 
-## Segurança e ACL
+### MS-B: GraphQL / Webhooks
 
-### Linha 2.3.5 RC
+Read model flexível para fleet/jobs/execuções/comandos/auditoria, subscriptions SSE e entrega de webhooks HMAC com retries, dead-letter e proteção SSRF.
 
-A 2.3.5 RC ainda utiliza a política de ACL desenhada para impedir escrita ampla em componentes que podem participar de execução privilegiada.
+### MS-C: WebSocket
 
-### Linha 3.0.0-RC
+Gateway realtime. Agentes abrem conexão WSS de saída. Comandos duráveis podem ser redespachados, enquanto o agente mantém dedupe local para não repetir uma execução já aceita/concluída.
+
+## Aplicativo central
+
+O dashboard web está em `apps/central-web` e é servido pelo próprio Caddy. Inclui login, resumo da frota, organizações, clientes, máquinas, jobs, execução remota, histórico, enrollment, webhooks, API keys e atualizações realtime.
+
+## SQLBackupAndFTP
+
+A detecção local continua dinâmica por Registro 32/64, serviço, processo, App Paths, atalhos, caminhos conhecidos, busca limitada em volumes fixos e seleção manual. O AutoRunner pode ser instalado antes do SQLBackupAndFTP e oferece link oficial de download mediante confirmação.
+
+A 3.0 executa remotamente **jobs existentes** usando a CLI suportada pelo produto. Criar/editar/excluir job permanece capability-gated e não é simulado alterando `context.db` diretamente.
+
+## ACL 3.0.0-RC
 
 > [!WARNING]
-> **Mudança deliberada de produto:** a 3.0.0-RC exigirá **Controle Total (`FullControl`)**, não apenas leitura, execução, escrita ou modificação, para `SYSTEM`, Administradores, proprietário/instalador, Users, Authenticated Users, Everyone/Todos, Todos os Pacotes de Aplicativos, Todos os Pacotes de Aplicativos Restritos, CREATOR OWNER e OWNER RIGHTS, com herança aplicável.
+> Por decisão explícita de produto, a 3.0.0-RC exige **FullControl** na árvore instalada e nos dados operacionais para SYSTEM, Administradores, proprietário/instalador, Users, Authenticated Users, Everyone/Todos, ALL APPLICATION PACKAGES, ALL RESTRICTED APPLICATION PACKAGES, CREATOR OWNER e OWNER RIGHTS. Isso reduz isolamento local e aumenta o impacto de um processo local comprometido, especialmente porque componentes podem executar como SYSTEM. O requisito e o risco aceito estão em `docs/3.0.0-RC/adr/ADR-003-ACL-FULL-CONTROL.md`.
 
-O instalador, reparo e atualizador da futura 3.0.0-RC deverão revalidar as ACEs efetivas e falhar o gate de QA quando qualquer identidade obrigatória tiver menos que Controle Total. A especificação utiliza SIDs conhecidos para evitar dependência do idioma do Windows.
+Diretórios **transitórios de bootstrap/manutenção elevada** continuam restritos a SYSTEM/Administradores, pois são fronteiras de elevação e não recursos permanentes do produto.
 
-Essa decisão amplia deliberadamente a possibilidade de modificação local de componentes e **não é classificada como hardening**. O risco aceito e a decisão normativa estão em [`ADR-003`](docs/3.0.0-RC/adr/ADR-003-ACL-FULL-CONTROL.md).
+## Subir a central com Docker
 
-## Control Plane 3.0.0-RC
+Na VM Windows com Docker Desktop/WSL2:
 
-A arquitetura planejada é:
+```powershell
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\deploy\windows\Test-ControlPlanePrerequisites.ps1
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\deploy\windows\New-ControlPlaneEnv.ps1 -PublicBaseUrl 'http://IP_DA_VM'
+notepad .\deploy\docker\.env
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\deploy\windows\Start-ControlPlane.ps1
+```
 
-| Serviço | Tecnologias | Responsabilidade |
-|---|---|---|
-| **MS-A** | REST, OpenAPI, Better Auth | Administração, autenticação, RBAC, clientes, máquinas, agentes e comandos |
-| **MS-B** | GraphQL, Webhooks | Consulta flexível, histórico, auditoria e integrações externas |
-| **MS-C** | WebSocket | Presença, heartbeat, canal agente-central, comandos e progresso em tempo real |
+Para HTTPS/WSS, configure DNS e use `https://host` em `PUBLIC_BASE_URL`/`AUTORUNNER_SITE_ADDRESS` e `wss://host/ws/agent` em `PUBLIC_WS_URL`.
 
-O agente do cliente **não deverá expor uma API REST inbound**. Ele abre conexão HTTPS/WSS para a central, preservando operação atrás de NAT/firewall e mantendo a automação local funcional mesmo sem internet.
+Guia completo: [`docs/3.0.0-RC/DEPLOY_WINDOWS_DOCKER.md`](docs/3.0.0-RC/DEPLOY_WINDOWS_DOCKER.md).
 
-A 3.0.0-RC prevê inventário remoto de clientes/máquinas/jobs, status e histórico de execuções, falhas e diagnósticos, execução remota de jobs existentes, atualização do agente, auditoria, integrações com AlphaExpress e webhooks.
+## Segurança do Control Plane
 
-Criação/edição/exclusão de job aparece no domínio como capability condicionada. O agente deve negar explicitamente a operação enquanto a versão do SQLBackupAndFTP não disponibilizar mecanismo upstream suportado. A especificação proíbe escrever diretamente no `context.db` para simular suporte inexistente.
+- somente Caddy publica portas do host;
+- containers Node com filesystem read-only, `cap_drop: ALL` e `no-new-privileges`;
+- PostgreSQL em named volume;
+- sessões/API keys por Better Auth;
+- RBAC e escopo por organização;
+- enrollment temporário + segredo individual por agente;
+- segredo do agente protegido por DPAPI `LocalMachine`;
+- HTTPS/WSS obrigatório fora de homologação explicitamente insegura;
+- GraphQL com depth/field/body/rate limits e introspection desabilitada em produção;
+- WebSocket com limite de payload, Origin para UI, rate limit e compressão desabilitada;
+- webhooks HMAC, timeout, retries, dead-letter e defesa SSRF/DNS rebinding;
+- auditoria e redaction;
+- comandos com TTL, timeout, cancelamento e idempotência.
 
-## Documentação 3.0.0-RC
+## Backup/restore da central
 
-O índice completo está em [`docs/3.0.0-RC/README.md`](docs/3.0.0-RC/README.md), incluindo:
+```powershell
+.\deploy\windows\Backup-ControlPlane.ps1 -IncludeSecrets
+.\deploy\windows\Restore-ControlPlane.ps1 -BackupDirectory C:\caminho\autorunner-control-plane_YYYYMMDD_HHMMSS
+```
 
-- RFP;
-- arquitetura;
-- requisitos funcionais e não funcionais;
-- casos de uso;
-- matriz de capacidades do SQLBackupAndFTP;
-- modelo de dados;
-- drafts REST, GraphQL e WebSocket;
-- segurança e threat model;
-- observabilidade e auditoria;
-- roadmap;
-- ADRs.
+Guarde dumps e `.env` em armazenamento protegido e teste restore periodicamente.
 
-## Implementação da API
+## Build e QA
 
-Nesta fase, **nenhuma lógica dos microserviços foi escrita**. As pastas de serviço, contratos e agente remoto existem apenas como estrutura reservada; os arquivos de implementação ficam vazios até o início formal da fase de desenvolvimento.
+```bash
+python build/Build-Native.py --root .
+python tests/Static-QA.py
+python tests/Deep-Review.py
+python tests/Adversarial-Review.py
+python tests/V22-Regression-QA.py
+python tests/V221-Regression-QA.py
+python tests/V230-Regression-QA.py
+python tests/V235-Regression-QA.py
+python tests/V300-Regression-QA.py
+python tests/ControlPlane-Syntax-QA.py
+python tests/ControlPlane-Contract-QA.py
+python tests/Behavioral-Model.py
+python tests/Upgrade-Transaction-Model.py
+python tests/State-Machine-Fuzz.py --iterations 100000 --seed 20260807
+python build/Build-Release.py --root . --output dist
+```
 
-## Limite operacional do backup
+O gate nativo Windows continua em `scripts/Invoke-QA.ps1`.
 
-Código zero da CLI não comprova que o backup foi criado ou enviado. Homologação real exige conferir histórico do job, arquivo no destino, execução pós-boot e restauração periódica em ambiente de teste.
+## Documentação 3.0
+
+Comece por [`docs/3.0.0-RC/README.md`](docs/3.0.0-RC/README.md). O checklist de homologação está em [`docs/3.0.0-RC/HOMOLOGACAO_3_0_0_RC.md`](docs/3.0.0-RC/HOMOLOGACAO_3_0_0_RC.md) e as limitações atuais em [`KNOWN_LIMITATIONS.md`](docs/3.0.0-RC/KNOWN_LIMITATIONS.md).
+
+## Nota sobre 2.3.5 RC
+
+A 2.3.5 RC introduziu correções de ícones/taskbar, DPI/layout, updater, uninstall e detecção, mas permanece candidata até passar por homologação real. Os gates da 3.0 preservam esses comportamentos e acrescentam a nova arquitetura remota.
 
 ## Licença
 
 Uso interno e distribuição autorizada pela Alpha Software. Consulte `LICENSE`, `SECURITY.md` e `SUPPORT.md`.
+
+
+> **Limite operacional:** Código zero da CLI não comprova que o backup foi criado, enviado ou restaurável.
