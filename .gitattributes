@@ -1,16 +1,16 @@
 * text=auto
-*.ps1 text eol=crlf working-tree-encoding=UTF-8
-*.psm1 text eol=crlf working-tree-encoding=UTF-8
-*.psd1 text eol=crlf working-tree-encoding=UTF-8
-*.cmd text eol=crlf
-*.bat text eol=crlf
-*.py text eol=lf
+*.ps1 text working-tree-encoding=UTF-8
+*.psm1 text working-tree-encoding=UTF-8
+*.psd1 text working-tree-encoding=UTF-8
 *.md text eol=lf
-*.yml text eol=lf
-*.yaml text eol=lf
+*.py text eol=lf
+*.c text eol=lf
 *.exe binary
 *.dll binary
-*.lib binary
 *.ico binary
+*.lib binary
 *.zip binary
 *.msi binary
+# Checksum manifests are normalized to LF in the repository.
+*SHA256SUMS.txt text eol=lf
+*.sha256.txt text eol=lf

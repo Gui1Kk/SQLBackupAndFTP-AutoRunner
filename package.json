@@ -1,0 +1,36 @@
+{
+  "name": "sqlbackupandftp-autorunner-control-plane",
+  "version": "3.0.0-rc.1",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=24.0.0 <25"
+  },
+  "scripts": {
+    "start:ms-a": "node services/ms-a-rest/src/server.ts",
+    "start:ms-b": "node services/ms-b-query-events/src/server.ts",
+    "start:ms-c": "node services/ms-c-realtime/src/server.ts",
+    "migrate:domain": "node deploy/scripts/migrate-domain.ts",
+    "migrate:auth": "auth migrate --config services/ms-a-rest/src/auth.ts --yes",
+    "bootstrap:admin": "node deploy/scripts/bootstrap-admin.ts",
+    "check:syntax": "python3 tests/ControlPlane-Syntax-QA.py",
+    "test:control-plane": "python3 tests/ControlPlane-Contract-QA.py",
+    "test": "npm run check:syntax && npm run test:control-plane"
+  },
+  "dependencies": {
+    "@better-auth/api-key": "1.6.25",
+    "@fastify/cors": "11.3.0",
+    "@fastify/helmet": "13.1.0",
+    "@fastify/rate-limit": "11.1.0",
+    "@fastify/swagger": "9.8.1",
+    "@fastify/swagger-ui": "6.1.1",
+    "better-auth": "1.6.25",
+    "fastify": "5.10.0",
+    "graphql": "16.11.0",
+    "graphql-yoga": "5.21.2",
+    "pg": "8.22.0",
+    "ws": "8.21.1",
+    "auth": "1.6.25"
+  },
+  "devDependencies": {}
+}

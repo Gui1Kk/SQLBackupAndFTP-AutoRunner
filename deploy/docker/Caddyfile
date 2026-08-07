@@ -1,0 +1,50 @@
+{$AUTORUNNER_SITE_ADDRESS:http://localhost} {
+    encode zstd gzip
+
+    header {
+        X-Content-Type-Options nosniff
+        X-Frame-Options DENY
+        Referrer-Policy no-referrer
+        Permissions-Policy "camera=(), microphone=(), geolocation=()"
+        Content-Security-Policy "default-src 'self'; base-uri 'self'; frame-ancestors 'none'; object-src 'none'; img-src 'self' data:; style-src 'self'; script-src 'self'; connect-src 'self' https: wss:; form-action 'self'"
+    }
+
+    @api path /api/* /health/* /docs* /docs/*
+    handle @api {
+        request_body {
+            max_size 2MB
+        }
+        reverse_proxy ms-a:8081
+    }
+
+    @graphql path /graphql /graphql/*
+    handle @graphql {
+        request_body {
+            max_size 1MB
+        }
+        reverse_proxy ms-b:8082
+    }
+
+    @ws path /ws/*
+    handle @ws {
+        reverse_proxy ms-c:8083
+    }
+
+    @assets path /assets/*
+    handle @assets {
+        root * /srv/central
+        header Cache-Control "public, max-age=86400"
+        file_server
+    }
+
+    handle {
+        root * /srv/central
+        try_files {path} /index.html
+        file_server
+    }
+
+    log {
+        output stdout
+        format json
+    }
+}

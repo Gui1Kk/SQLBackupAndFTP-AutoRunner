@@ -4,14 +4,14 @@
 
 **Projeto:** SQLBackupAndFTP AutoRunner — Remote Control Plane  
 **Versão alvo:** 3.0.0-RC  
-**Estado:** especificação e preparação de repositório  
-**Escopo desta etapa:** documentação completa, requisitos, arquitetura e placeholders; **sem implementação dos microserviços**.
+**Estado:** implementação Release Candidate  
+**Escopo desta etapa:** implementação dos três serviços, agente, contratos, dashboard, Docker/operabilidade e preparação para homologação.
 
 ## 2. Contexto e problema
 
 O AutoRunner 2.3.5 RC resolve o disparo local de jobs configurados no SQLBackupAndFTP, principalmente após boot, mas cada instalação continua isolada. Para suporte centralizado, hoje é necessário acessar a máquina, abrir o aplicativo ou coletar informações manualmente.
 
-A 3.0.0-RC propõe transformar cada instalação do AutoRunner em um agente de borda conectado a um plano de controle. A central poderá responder perguntas como:
+A 3.0.0-RC transforma cada instalação do AutoRunner em um agente de borda conectado a um plano de controle. A central poderá responder perguntas como:
 
 - quais clientes e máquinas estão online;
 - qual versão do AutoRunner e SQLBackupAndFTP cada máquina usa;
@@ -75,8 +75,8 @@ A lista normativa está em `REQUISITOS_FUNCIONAIS.md` e `REQUISITOS_NAO_FUNCIONA
 
 ## 7. Interfaces
 
-- MS-A: `REST_API_DRAFT.md` e futuramente `contracts/openapi.yaml`.
-- MS-B: `GRAPHQL_DRAFT.md` e futuramente `contracts/schema.graphql`.
+- MS-A: `REST_API_DRAFT.md` e contrato executável `contracts/openapi.yaml`.
+- MS-B: `GRAPHQL_DRAFT.md` e contrato executável `contracts/schema.graphql`.
 - MS-C: `WEBSOCKET_PROTOCOL_DRAFT.md`.
 
 ## 8. Persistência e eventos
@@ -101,7 +101,6 @@ A política de ACL local da 3.0.0-RC é deliberadamente permissiva por decisão 
 8. Dados sensíveis não aparecem em inventário/log por padrão.
 9. GraphQL e WebSocket possuem limites de abuso.
 10. AlphaExpress consegue integrar sem possuir credencial de usuário humano.
-11. ACL 3.0.0-RC concede `FullControl` a todas as identidades definidas no ADR-003 e o gate falha se alguma estiver abaixo disso.
 
 ## 11. Entregáveis desta fase
 
@@ -110,7 +109,7 @@ A política de ACL local da 3.0.0-RC é deliberadamente permissiva por decisão 
 - RF/RNF;
 - casos de uso;
 - modelo de dados;
-- drafts REST/GraphQL/WebSocket;
+- contratos REST/GraphQL/WebSocket;
 - matriz de capacidades SQLBackupAndFTP;
 - modelo de ameaças;
 - roadmap;

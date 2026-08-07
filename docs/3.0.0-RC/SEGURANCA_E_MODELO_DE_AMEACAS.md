@@ -31,7 +31,7 @@ Better Auth oferece plugin de API keys com permissões, rate limiting, expiraç�
 
 ## 4. ACL local 3.0.0-RC — risco aceito
 
-A política exigida pelo produto concede **Controle Total** a identidades amplas na árvore instalada, incluindo Everyone/Todos, Users, Authenticated Users, todos os pacotes de aplicativos e identidades de proprietário. Isso significa que um processo que consiga modificar um script/binário posteriormente executado por uma tarefa/serviço elevado pode transformar essa permissão em elevação local de privilégio.
+A política exigida pelo produto concede Controle Total a identidades amplas na árvore instalada, incluindo Everyone/Todos e pacotes de aplicativos. Isso significa que um processo que consiga modificar um script/binário posteriormente executado por uma tarefa/serviço elevado pode transformar essa permissão em elevação local de privilégio.
 
 Consequências arquiteturais:
 
@@ -40,6 +40,5 @@ Consequências arquiteturais:
 3. Minimizar o que roda como `SYSTEM` e validar artefatos antes de execução sempre que possível.
 4. Registrar essa decisão em release notes e homologação.
 5. Tratar a segurança do canal remoto como independente da permissividade da ACL local.
-6. O gate de ACL deve verificar `FullControl`, porque permissões inferiores contrariam o requisito funcional da 3.0.0-RC.
 
 Essa seção existe para manter a documentação tecnicamente correta sem contrariar a política funcional definida para a release.

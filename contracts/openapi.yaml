@@ -1,0 +1,462 @@
+openapi: 3.1.0
+info:
+  title: SQLBackupAndFTP AutoRunner Control API
+  version: 3.0.0-RC
+  description: |
+    API REST do Control Plane do SQLBackupAndFTP AutoRunner.
+    Operações remotas são assíncronas e retornam comandos duráveis.
+    O agente Windows inicia a conexão outbound e nenhuma porta precisa ser aberta no cliente.
+servers:
+  - url: https://autorunner.example.com
+    description: Produção ou homologação com TLS
+  - url: http://localhost:8080
+    description: Desenvolvimento local
+security:
+  - sessionCookie: []
+  - apiKey: []
+tags:
+  - name: System
+  - name: Organizations
+  - name: Clients
+  - name: Machines
+  - name: Agents
+  - name: Jobs
+  - name: Commands
+  - name: Executions
+  - name: Webhooks
+  - name: Integrations
+  - name: Realtime
+paths:
+  /health/live:
+    get:
+      security: []
+      tags: [System]
+      summary: Liveness do MS-A
+      responses: {'200': {description: Processo vivo}}
+  /health/ready:
+    get:
+      security: []
+      tags: [System]
+      summary: Readiness do MS-A
+      responses:
+        '200': {description: Banco acessível}
+        '503': {description: Dependência indisponível}
+  /api/v1/version:
+    get:
+      security: []
+      tags: [System]
+      summary: Versão da API
+      responses:
+        '200':
+          description: Versão
+          content: {application/json: {schema: {$ref: '#/components/schemas/Version'}}}
+  /api/v1/agent/enroll:
+    post:
+      security: []
+      tags: [Agents]
+      summary: Matricula uma instalação do agente com token de uso único
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/AgentEnrollmentRequest'}
+      responses:
+        '201':
+          description: Identidade criada. O segredo só é devolvido nesta resposta.
+          content: {application/json: {schema: {$ref: '#/components/schemas/AgentEnrollmentResponse'}}}
+        '401': {$ref: '#/components/responses/Problem'}
+        '409': {$ref: '#/components/responses/Problem'}
+        '429': {$ref: '#/components/responses/Problem'}
+  /api/v1/me:
+    get:
+      tags: [System]
+      summary: Principal autenticado e escopo efetivo
+      responses:
+        '200': {description: Principal atual}
+        '401': {$ref: '#/components/responses/Problem'}
+  /api/v1/organizations:
+    get:
+      tags: [Organizations]
+      summary: Lista organizações visíveis
+      responses:
+        '200': {description: Organizações}
+    post:
+      tags: [Organizations]
+      summary: Cria organização
+      description: Restrito a platform_owner autenticado por sessão.
+      requestBody:
+        required: true
+        content: {application/json: {schema: {$ref: '#/components/schemas/OrganizationCreate'}}}
+      responses:
+        '201': {description: Organização criada}
+        '403': {$ref: '#/components/responses/Problem'}
+  /api/v1/clients:
+    get:
+      tags: [Clients]
+      summary: Lista clientes
+      parameters:
+        - {$ref: '#/components/parameters/OrganizationId'}
+      responses: {'200': {description: Clientes}}
+    post:
+      tags: [Clients]
+      summary: Cria cliente
+      requestBody:
+        required: true
+        content: {application/json: {schema: {$ref: '#/components/schemas/ClientCreate'}}}
+      responses:
+        '201': {description: Cliente criado}
+        '403': {$ref: '#/components/responses/Problem'}
+  /api/v1/clients/{clientId}:
+    parameters:
+      - {$ref: '#/components/parameters/ClientId'}
+    get:
+      tags: [Clients]
+      summary: Consulta cliente
+      responses: {'200': {description: Cliente}, '404': {$ref: '#/components/responses/Problem'}}
+    patch:
+      tags: [Clients]
+      summary: Atualiza dados administrativos do cliente
+      requestBody:
+        required: true
+        content: {application/json: {schema: {$ref: '#/components/schemas/ClientUpdate'}}}
+      responses: {'200': {description: Cliente atualizado}}
+  /api/v1/clients/{clientId}/machines:
+    parameters:
+      - {$ref: '#/components/parameters/ClientId'}
+    get:
+      tags: [Machines]
+      summary: Lista máquinas do cliente
+      responses: {'200': {description: Máquinas}}
+    post:
+      tags: [Machines]
+      summary: Cadastra ou atualiza máquina administrativa
+      requestBody:
+        required: true
+        content: {application/json: {schema: {$ref: '#/components/schemas/MachineCreate'}}}
+      responses: {'201': {description: Máquina criada ou atualizada}}
+  /api/v1/machines/{machineId}:
+    parameters:
+      - {$ref: '#/components/parameters/MachineId'}
+    get:
+      tags: [Machines]
+      summary: Detalhes da máquina, agente e instalação SQLBackupAndFTP
+      responses: {'200': {description: Máquina}, '404': {$ref: '#/components/responses/Problem'}}
+  /api/v1/machines/{machineId}/capabilities:
+    parameters:
+      - {$ref: '#/components/parameters/MachineId'}
+    get:
+      tags: [Machines]
+      summary: Capacidades declaradas pelo agente
+      responses: {'200': {description: Capabilities}}
+  /api/v1/machines/{machineId}/jobs:
+    parameters:
+      - {$ref: '#/components/parameters/MachineId'}
+    get:
+      tags: [Jobs]
+      summary: Lista jobs ativos descobertos no SQLBackupAndFTP
+      responses: {'200': {description: Jobs}}
+  /api/v1/machines/{machineId}/executions:
+    parameters:
+      - {$ref: '#/components/parameters/MachineId'}
+    get:
+      tags: [Executions]
+      summary: Últimas execuções observadas
+      responses: {'200': {description: Execuções}}
+  /api/v1/agents/enrollments:
+    post:
+      tags: [Agents]
+      summary: Emite token de enrollment de uso único
+      requestBody:
+        required: true
+        content: {application/json: {schema: {$ref: '#/components/schemas/EnrollmentTokenCreate'}}}
+      responses:
+        '201':
+          description: Token criado. O token em claro só é mostrado nesta resposta.
+  /api/v1/agents/{agentId}/revoke:
+    parameters:
+      - {$ref: '#/components/parameters/AgentId'}
+    post:
+      tags: [Agents]
+      summary: Revoga identidade do agente
+      responses: {'200': {description: Agente revogado}}
+  /api/v1/agents/{agentId}/inventory-refresh:
+    parameters: [{$ref: '#/components/parameters/AgentId'}, {$ref: '#/components/parameters/IdempotencyKey'}]
+    post:
+      tags: [Agents, Commands]
+      summary: Solicita novo inventário
+      responses: {'202': {description: Comando enfileirado, content: {application/json: {schema: {$ref: '#/components/schemas/CommandAccepted'}}}}}
+  /api/v1/agents/{agentId}/diagnostics:
+    parameters: [{$ref: '#/components/parameters/AgentId'}, {$ref: '#/components/parameters/IdempotencyKey'}]
+    post:
+      tags: [Agents, Commands]
+      summary: Solicita diagnóstico sanitizado
+      responses: {'202': {description: Comando enfileirado}}
+  /api/v1/agents/{agentId}/updates:
+    parameters: [{$ref: '#/components/parameters/AgentId'}, {$ref: '#/components/parameters/IdempotencyKey'}]
+    post:
+      tags: [Agents, Commands]
+      summary: Reserva comando de atualização do agente
+      description: A capability agentUpdate é false nesta RC; chamada é rejeitada até o fluxo de update remoto ser homologado.
+      responses: {'202': {description: Comando aceito quando capability disponível}, '409': {$ref: '#/components/responses/Problem'}}
+  /api/v1/jobs/{jobId}:
+    parameters:
+      - {$ref: '#/components/parameters/JobId'}
+    get:
+      tags: [Jobs]
+      summary: Consulta job
+      responses: {'200': {description: Job}, '404': {$ref: '#/components/responses/Problem'}}
+    patch:
+      tags: [Jobs]
+      summary: Contrato reservado para edição futura
+      responses: {'501': {$ref: '#/components/responses/Problem'}}
+    delete:
+      tags: [Jobs]
+      summary: Contrato reservado para exclusão futura
+      responses: {'501': {$ref: '#/components/responses/Problem'}}
+  /api/v1/jobs:
+    post:
+      tags: [Jobs]
+      summary: Contrato reservado para criação futura
+      description: Não escreve diretamente no context.db do SQLBackupAndFTP.
+      responses: {'501': {$ref: '#/components/responses/Problem'}}
+  /api/v1/jobs/{jobId}/executions:
+    parameters:
+      - {$ref: '#/components/parameters/JobId'}
+      - {$ref: '#/components/parameters/IdempotencyKey'}
+    post:
+      tags: [Jobs, Commands]
+      summary: Executa remotamente um job existente
+      description: Resposta assíncrona. Consulte o commandId até estado terminal ou acompanhe realtime.
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                backupType: {type: string, enum: [Default, Full, FullCopy, Diff, TranLog, TranLogCopy], default: Default}
+      responses:
+        '202':
+          description: Comando enfileirado
+          content: {application/json: {schema: {$ref: '#/components/schemas/CommandAccepted'}}}
+        '200':
+          description: Replay idempotente de comando já existente
+          content: {application/json: {schema: {$ref: '#/components/schemas/CommandAccepted'}}}
+        '409': {$ref: '#/components/responses/Problem'}
+  /api/v1/commands/{commandId}:
+    parameters: [{$ref: '#/components/parameters/CommandId'}]
+    get:
+      tags: [Commands]
+      summary: Consulta estado de comando
+      responses: {'200': {description: Comando}}
+  /api/v1/commands/{commandId}/cancel:
+    parameters: [{$ref: '#/components/parameters/CommandId'}, {$ref: '#/components/parameters/IdempotencyKey'}]
+    post:
+      tags: [Commands]
+      summary: Solicita cancelamento de comando em execução
+      responses: {'202': {description: Solicitação enfileirada}}
+  /api/v1/executions/{executionId}:
+    parameters: [{$ref: '#/components/parameters/ExecutionId'}]
+    get:
+      tags: [Executions]
+      summary: Consulta execução
+      responses: {'200': {description: Execução}}
+  /api/v1/webhooks:
+    get:
+      tags: [Webhooks]
+      summary: Lista webhooks no escopo
+      parameters: [{$ref: '#/components/parameters/OrganizationId'}]
+      responses: {'200': {description: Endpoints}}
+    post:
+      tags: [Webhooks]
+      summary: Cadastra webhook assinado HMAC
+      requestBody:
+        required: true
+        content: {application/json: {schema: {$ref: '#/components/schemas/WebhookCreate'}}}
+      responses:
+        '201': {description: Webhook criado; segredo mostrado uma vez}
+  /api/v1/webhooks/{webhookId}:
+    parameters:
+      - name: webhookId
+        in: path
+        required: true
+        schema: {type: string, format: uuid}
+    delete:
+      tags: [Webhooks]
+      summary: Remove webhook
+      responses: {'204': {description: Removido}}
+  /api/v1/integrations/api-keys:
+    get:
+      tags: [Integrations]
+      summary: Lista credenciais da organização
+      parameters: [{$ref: '#/components/parameters/OrganizationId'}]
+      responses: {'200': {description: Chaves sem segredo}}
+    post:
+      tags: [Integrations]
+      summary: Cria API key de integração
+      description: Exige sessão humana; a chave em claro só é mostrada uma vez.
+      requestBody:
+        required: true
+        content: {application/json: {schema: {$ref: '#/components/schemas/ApiKeyCreate'}}}
+      responses: {'201': {description: Credencial criada}}
+  /api/v1/integrations/api-keys/{keyId}:
+    parameters:
+      - name: keyId
+        in: path
+        required: true
+        schema: {type: string}
+      - {$ref: '#/components/parameters/OrganizationId'}
+    delete:
+      tags: [Integrations]
+      summary: Revoga credencial
+      responses: {'204': {description: Revogada}}
+  /api/v1/realtime/token:
+    post:
+      tags: [Realtime]
+      summary: Emite token efêmero para WebSocket da UI
+      responses:
+        '200':
+          description: Token de 120 segundos e URL do gateway
+components:
+  securitySchemes:
+    sessionCookie:
+      type: apiKey
+      in: cookie
+      name: autorunner.session_token
+      description: Sessão Better Auth. O nome físico pode conter sufixo Secure conforme TLS.
+    apiKey:
+      type: apiKey
+      in: header
+      name: x-api-key
+  parameters:
+    OrganizationId:
+      name: organizationId
+      in: query
+      required: false
+      schema: {type: string, format: uuid}
+    ClientId: {name: clientId, in: path, required: true, schema: {type: string, format: uuid}}
+    MachineId: {name: machineId, in: path, required: true, schema: {type: string, format: uuid}}
+    AgentId: {name: agentId, in: path, required: true, schema: {type: string, format: uuid}}
+    JobId: {name: jobId, in: path, required: true, schema: {type: string, format: uuid}}
+    CommandId: {name: commandId, in: path, required: true, schema: {type: string, format: uuid}}
+    ExecutionId: {name: executionId, in: path, required: true, schema: {type: string, format: uuid}}
+    IdempotencyKey:
+      name: Idempotency-Key
+      in: header
+      required: true
+      schema: {type: string, minLength: 8, maxLength: 200}
+      description: Chave estável por intenção do chamador. Replays com payload diferente retornam 409.
+  responses:
+    Problem:
+      description: RFC 9457 style problem detail
+      content:
+        application/problem+json:
+          schema: {$ref: '#/components/schemas/Problem'}
+  schemas:
+    Version:
+      type: object
+      required: [product, version, apiVersion]
+      properties:
+        product: {type: string}
+        version: {type: string, const: 3.0.0-RC}
+        apiVersion: {type: string, const: v1}
+    Problem:
+      type: object
+      required: [type, title, status, code]
+      properties:
+        type: {type: string}
+        title: {type: string}
+        status: {type: integer}
+        code: {type: string}
+        detail: {type: string}
+        traceId: {type: string}
+    OrganizationCreate:
+      type: object
+      required: [name]
+      properties:
+        name: {type: string, minLength: 2, maxLength: 200}
+        slug: {type: string, maxLength: 100}
+        metadata: {type: object, additionalProperties: true}
+    ClientCreate:
+      type: object
+      required: [organizationId, name]
+      properties:
+        organizationId: {type: string, format: uuid}
+        code: {type: [string, 'null'], maxLength: 100}
+        name: {type: string, minLength: 2, maxLength: 200}
+        metadata: {type: object, additionalProperties: true}
+    ClientUpdate:
+      type: object
+      properties:
+        code: {type: [string, 'null'], maxLength: 100}
+        name: {type: string, minLength: 2, maxLength: 200}
+        status: {type: string, enum: [active, inactive, archived]}
+    MachineCreate:
+      type: object
+      required: [stableKey, displayName]
+      properties:
+        stableKey: {type: string, minLength: 1, maxLength: 300}
+        displayName: {type: string, minLength: 1, maxLength: 200}
+        hostname: {type: [string, 'null'], maxLength: 255}
+        siteId: {type: [string, 'null'], format: uuid}
+        metadata: {type: object, additionalProperties: true}
+    EnrollmentTokenCreate:
+      type: object
+      required: [organizationId, clientId]
+      properties:
+        organizationId: {type: string, format: uuid}
+        clientId: {type: string, format: uuid}
+        siteId: {type: [string, 'null'], format: uuid}
+        label: {type: [string, 'null'], maxLength: 200}
+        ttlSeconds: {type: integer, minimum: 60, maximum: 86400, default: 900}
+    AgentEnrollmentRequest:
+      type: object
+      required: [token, installId, machine]
+      properties:
+        token: {type: string, minLength: 20}
+        installId: {type: string, minLength: 8, maxLength: 200}
+        agentVersion: {type: string, maxLength: 50}
+        channel: {type: string, maxLength: 20}
+        protocolVersion: {type: integer, minimum: 1}
+        machine: {type: object, additionalProperties: true}
+        capabilities: {type: object, additionalProperties: true}
+    AgentEnrollmentResponse:
+      type: object
+      required: [agentId, machineId, secret, wsUrl, protocolVersion, heartbeatIntervalSeconds]
+      properties:
+        agentId: {type: string, format: uuid}
+        machineId: {type: string, format: uuid}
+        secret: {type: string, writeOnly: true}
+        wsUrl: {type: string, format: uri}
+        protocolVersion: {type: integer}
+        heartbeatIntervalSeconds: {type: integer}
+    CommandAccepted:
+      type: object
+      required: [commandId, status, type, createdAt, expiresAt]
+      properties:
+        commandId: {type: string, format: uuid}
+        status: {type: string, enum: [queued, dispatched, accepted, running, succeeded, failed, cancelled, expired, rejected]}
+        type: {type: string}
+        createdAt: {type: string, format: date-time}
+        expiresAt: {type: string, format: date-time}
+        idempotentReplay: {type: boolean}
+    WebhookCreate:
+      type: object
+      required: [organizationId, name, url]
+      properties:
+        organizationId: {type: string, format: uuid}
+        name: {type: string, minLength: 1, maxLength: 200}
+        url: {type: string, format: uri}
+        eventTypes: {type: array, items: {type: string}, maxItems: 100}
+    ApiKeyCreate:
+      type: object
+      required: [organizationId, name]
+      properties:
+        organizationId: {type: string, format: uuid}
+        name: {type: string, minLength: 1, maxLength: 100}
+        purpose: {type: string, maxLength: 100}
+        expiresIn: {type: integer, minimum: 60}
+        permissions:
+          type: object
+          additionalProperties:
+            type: array
+            items: {type: string}

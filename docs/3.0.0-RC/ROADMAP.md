@@ -2,7 +2,7 @@
 
 ## Fase 0 — documentação e preparação do repositório (esta etapa)
 
-- atualizar a documentação para a base 2.3.5 RC;
+- atualizar repositório para a base 2.3.5 RC;
 - definir arquitetura de três microserviços;
 - requisitos funcionais e não funcionais;
 - modelo de domínio;
@@ -10,7 +10,6 @@
 - modelo de ameaças;
 - capability matrix do SQLBackupAndFTP;
 - criar arquivos de implementação **vazios**;
-- registrar a política de ACL `FullControl` da 3.0.0-RC;
 - nenhuma lógica da API implementada.
 
 ## Fase 1 — spike técnico
@@ -60,4 +59,4 @@
 
 ## Gate para 3.0.0-RC
 
-A primeira RC funcional só deve ser publicada quando Fases 1 a 3 estiverem homologadas, o agente continuar funcional offline e a política ACL da versão tiver passado pela verificação efetiva de `FullControl` para todas as identidades obrigatórias. Recursos da Fase 5 não bloqueiam a 3.0.0-RC se forem explicitamente reportados como não suportados.
+A primeira RC funcional só deve ser publicada quando Fases 1 a 3 estiverem homologadas e o agente continuar funcional offline. Recursos da Fase 5 não bloqueiam a 3.0.0-RC se forem explicitamente reportados como não suportados.

@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="dark light">
+<title>AutoRunner Control Center</title>
+<link rel="icon" href="/assets/AutoRunner.png"><link rel="stylesheet" href="/app.css">
+</head>
+<body>
+<div id="login" class="auth-shell">
+  <form id="loginForm" class="panel auth-card">
+    <img src="/assets/AutoRunner.png" alt="AutoRunner" class="logo">
+    <h1>AutoRunner Control Center</h1><p class="muted">Control Plane 3.0.0-RC</p>
+    <label>E-mail<input id="email" type="email" autocomplete="username" required></label>
+    <label>Senha<input id="password" type="password" autocomplete="current-password" required></label>
+    <button type="submit" class="primary">Entrar</button><div id="loginError" class="error"></div>
+  </form>
+</div>
+<div id="app" class="app hidden">
+  <aside class="sidebar">
+    <div class="brand"><img src="/assets/AutoRunner.png"><div><strong>AutoRunner</strong><small>Control Center</small></div></div>
+    <nav>
+      <button data-view="dashboard" class="nav active">Visão geral</button>
+      <button data-view="clients" class="nav">Clientes</button>
+      <button data-view="machines" class="nav">Máquinas</button>
+      <button data-view="commands" class="nav">Comandos</button>
+      <button data-view="enrollment" class="nav">Enrollment</button>
+      <button data-view="webhooks" class="nav">Integrações</button>
+    </nav>
+    <div class="sidebar-foot"><span id="connectionDot" class="dot"></span><span id="connectionText">Realtime...</span><button id="logout" class="ghost">Sair</button></div>
+  </aside>
+  <main>
+    <header><div><h2 id="title">Visão geral</h2><p id="subtitle" class="muted">Frota, backups e saúde operacional.</p></div><div class="header-actions"><button id="refresh" class="ghost">Atualizar</button><span id="userBadge" class="badge"></span></div></header>
+    <section id="dashboardView" class="view">
+      <div id="summary" class="cards"></div>
+      <div class="grid two"><div class="panel"><div class="panel-title"><h3>Máquinas</h3><span class="muted">status dos agentes</span></div><div id="dashboardMachines"></div></div><div class="panel"><div class="panel-title"><h3>Falhas recentes</h3><span class="muted">últimas execuções</span></div><div id="failures"></div></div></div>
+    </section>
+    <section id="clientsView" class="view hidden"><div class="panel"><div class="panel-title"><h3>Clientes</h3><div class="inline-actions"><button id="newOrganization" class="ghost small">Nova organização</button><button id="newClient" class="primary small">Novo cliente</button></div></div><div id="clientsTable"></div></div></section>
+    <section id="machinesView" class="view hidden"><div class="panel"><div class="panel-title"><h3>Máquinas e jobs</h3><span class="muted">Clique em uma máquina para expandir.</span></div><div id="machinesTable"></div></div></section>
+    <section id="commandsView" class="view hidden"><div class="panel"><div class="panel-title"><h3>Comandos</h3></div><div id="commandsTable"></div></div></section>
+    <section id="enrollmentView" class="view hidden"><div class="grid two"><div class="panel"><h3>Gerar enrollment</h3><form id="enrollForm"><label>Organização<select id="enrollOrg" required></select></label><label>Cliente<select id="enrollClient" required></select></label><label>Rótulo<input id="enrollLabel" placeholder="Servidor do cliente"></label><button class="primary">Gerar token</button></form></div><div class="panel"><h3>Conectar o AutoRunner</h3><pre id="enrollResult" class="code">Gere um token. No cliente, abra AutoRunner → Conectar à Central e cole a URL e o token.</pre></div></div></section>
+    <section id="webhooksView" class="view hidden">
+      <div class="grid two">
+        <div class="panel"><div class="panel-title"><h3>Webhooks</h3><button id="newWebhook" class="primary small">Novo webhook</button></div><p class="muted">Eventos são assinados com HMAC-SHA256 e entregues com retry/dlq.</p><div id="webhooksTable"></div></div>
+        <div class="panel"><div class="panel-title"><h3>API Keys</h3><button id="newApiKey" class="primary small">Nova chave</button></div><p class="muted">Credenciais para AlphaExpress ou outras integrações. O segredo aparece uma única vez.</p><label>Organização<select id="integrationOrg"></select></label><div id="apiKeysTable"></div></div>
+      </div>
+    </section>
+  </main>
+</div>
+<div id="modal" class="modal hidden"><div class="modal-card"><button id="modalClose" class="modal-x">×</button><div id="modalBody"></div></div></div>
+<div id="toast" class="toast hidden"></div>
+<script type="module" src="/app.js"></script>
+</body></html>

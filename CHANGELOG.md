@@ -1,5 +1,83 @@
 # Changelog
 
+## 3.0.0-RC
+
+- adiciona Control Plane com MS-A REST/OpenAPI/Better Auth, MS-B GraphQL/Webhooks e MS-C WebSocket;
+- adiciona dashboard central web;
+- transforma a instalação Windows em agente outbound-only opcional;
+- adiciona enrollment, inventário, presença online/offline, comandos duráveis, execução remota de jobs existentes e diagnósticos;
+- adiciona API keys por organização e webhooks HMAC;
+- adiciona PostgreSQL como fonte de verdade, outbox transacional e LISTEN/NOTIFY para wake-up realtime;
+- adiciona Docker Compose, Caddy, migrações, bootstrap de administrador e scripts Windows de deploy/backup/restore;
+- adiciona OpenAPI e schema GraphQL preenchidos;
+- adiciona limites de GraphQL/WebSocket, SSRF protection, auditoria, redaction e idempotência;
+- aplica a política FullControl 3.0 definida pelo produto e documenta seu risco aceito;
+- preserva a automação local e as correções 2.3.5;
+- mantém criação/edição/exclusão de jobs como capability-gated enquanto não existir mecanismo upstream suportado.
+
+> Release Candidate: Docker/Windows/SQLBackupAndFTP reais ainda precisam de homologação antes de produção.
+
+## 2.3.5 RC
+
+Candidata de estabilização após homologação real da 2.3.0:
+
+- corrigida a ACL da aplicação: `SYSTEM` e Administradores permanecem com controle total, enquanto usuário instalador, Users, Authenticated Users, Everyone e AppContainer recebem somente leitura/execução;
+- arquivos copiados são normalizados para herdar a ACL validada e escrita ampla continua bloqueada;
+- atalhos usam o ícone incorporado no launcher;
+- corrigido o namespace do P/Invoke de DPI/AppUserModelID que anteriormente falhava silenciosamente;
+- identidade AppUserModelID é aplicada diretamente ao HWND hospedado pelo PowerShell com interface COM/HRESULT explícita;
+- propriedades `RelaunchCommand`, `RelaunchDisplayNameResource` e `RelaunchIconResource` são gravadas no HWND antes do AppUserModelID para que a taskbar use launcher/ícone próprios em vez do host PowerShell;
+- painel principal e Setup passam a usar layouts responsivos, docking e scroll para evitar controles cortados em DPI alto;
+- diálogos recebem `AutoScaleMode=Dpi` e posicionamento compatível com o monitor ativo;
+- remoção trata o falso `ExitCode -1` somente quando a pós-condição comprova que tarefa e configuração desapareceram;
+- detecção do SQLBackupAndFTP passa a agregar Registro, serviços, processos, App Paths, atalhos, caminhos conhecidos, volumes locais limitados e seleção manual;
+- AutoRunner pode ser instalado sem SQLBackupAndFTP e oferece download oficial somente após confirmação;
+- adicionada checagem integrada de releases e atualização opt-in validada por SHA-256;
+- falha de rede não adia a próxima checagem automática;
+- bootstrap elevado deixa de extrair payload no TEMP do usuário e usa diretório privado aleatório sob `Program Files`;
+- reparo, desinstalação diferida, staging/rollback da automação e autocópia do desinstalador usam scratch privilegiado sob `Program Files`, com ACL exclusiva de `SYSTEM`/Administradores, GUID obrigatório e limpeza após inspeção completa da árvore;
+- solicitação de instalação que atravessa o UAC é vinculada por SHA-256 à linha de comando e interpretada a partir dos mesmos bytes já validados, fechando troca TOCTOU do JSON;
+- updater elevado passa a baixar artefatos em `ProgramData` protegido;
+- novo gate `V235-Regression-QA.py` cobre ACL, ícones, taskbar, DPI/layout, update, detecção e remoção.
+
+> A 2.3.5 RC só pode ser promovida após `docs/HOMOLOGACAO_2_3_5_RC.md`, incluindo boot, backup e restauração reais.
+
+## 2.3.0
+
+Reestruturação de estabilidade e do pipeline de release:
+
+- removido o host .NET compilado na primeira execução;
+- launcher nativo passa a iniciar diretamente o Windows PowerShell 5.1 em STA;
+- reparo, atualização e desinstalação são relançados fora da pasta instalada;
+- eliminada a janela TOCTOU de executar cópia elevada em pasta gravável pelo usuário;
+- detecção de processos inclui linhas de comando que referenciam a instalação;
+- mutex global impede manutenções concorrentes;
+- upgrade usa staging e rollback em diretórios irmãos, com renomeação atômica;
+- resíduos de interrupções anteriores são recuperados de forma determinística;
+- erros de inspeção são separados de junctions ou links reais;
+- switches nativos são reconhecidos como argumentos exatos, não por substring;
+- Build-Native recompila launcher, Setup e bridge MSI com warnings como erro;
+- Setup, Portable e Source são produzidos do mesmo `VERSION`;
+- Source recebe inventário interno e exclui binários históricos e segredos;
+- adicionados QA 2.3.0, modelo transacional, fault injection e 100.000 iterações de fuzz;
+- CI passa a executar build, QA de pacotes e testes nativos no Windows.
+
+> A 2.3.0 foi substituída pela 2.3.5 RC após testes reais revelarem problemas de ACL, abertura, ícones, DPI/layout e remoção.
+## 2.2.6
+
+Correção da atualização sobre instalações anteriores e melhoria de diagnóstico do Portable:
+
+- removida a cópia recursiva da instalação anterior, que podia transformar uma falha de enumeração em falso aviso de junction;
+- a instalação antiga agora é renomeada no mesmo volume para um diretório de rollback e restaurada por movimento em caso de falha;
+- processos do AutoRunner carregados a partir da pasta antiga são encerrados antes da troca;
+- a inspeção de reparse points retorna relatório estruturado e diferencia link real de erro de acesso ou enumeração;
+- limpeza do backup usa remoção que não segue junctions ou links simbólicos;
+- o Portable registra a saída do compilador em `%TEMP%\SQLBackupAndFTPAuto\portable-host-build.log`;
+- mensagens do Portable passam a exibir código de falha e caminho do log;
+- adicionada a suíte `V226-Regression-QA.py`.
+
+> A 2.2.6 permanece candidata de homologação até passar em instalação, atualização, Portable, automação, reinicialização e backup reais no Windows x64.
+
 ## 2.2.5
 
 Correção de integridade, ativação do Portable e acabamento visual do Setup:
