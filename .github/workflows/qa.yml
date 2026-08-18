@@ -1,0 +1,23 @@
+name: QA disabled - local only
+
+# Deliberately has no push, pull_request, schedule or workflow_dispatch trigger.
+# It can only be referenced as a reusable workflow, and even then every job is
+# hard-disabled before runner allocation. The project runs QA locally/manual.
+on:
+  workflow_call:
+
+jobs:
+  windows-native:
+    if: ${{ false }}
+    runs-on: windows-2022
+    steps:
+      - name: Disabled QA reference
+        shell: powershell
+        run: |
+          # Reference only; this job is never sent to a runner.
+          powershell.exe -NoLogo -NoProfile -ExecutionPolicy Bypass -File .\scripts\Invoke-QA.ps1 -Integration
+          python tests\V230-Regression-QA.py
+          python tests\V235-Regression-QA.py
+          python build\Build-Release.py --root . --output dist
+          python tests\Setup-Installer-QA.py dist\SQLBackupAndFTP-AutoRunner-Setup-v3.0.1.exe
+          python tests\Source-Package-QA.py dist\SQLBackupAndFTP-AutoRunner-v3.0.1-Source.zip dist\SQLBackupAndFTP-AutoRunner-v3.0.1-Source.zip.sha256.txt
