@@ -9,6 +9,18 @@ version=rd('VERSION').strip(); channel=rd('RELEASE_CHANNEL').strip()
 add('Versão estável 3.0.1',version=='3.0.1' and channel.upper()=='STABLE',f'{version}-{channel}')
 manager=rd('scripts/Manager.ps1'); core=rd('modules/AutoRunner.Core.psm1'); runner=rd('scripts/Run-SQLBackupAndFTPJob.ps1'); setup=rd('scripts/Setup-Wizard.ps1'); winqa=rd('scripts/Invoke-QA.ps1')
 
+# Bootstrap must accept the current canonical config schema before importing the module.
+core_schema_match=re.search(r"\$script:ConfigSchemaVersion\s*=\s*(\d+)",core)
+bootstrap_schema_match=re.search(r"\$bootstrapSupportedSchema\s*=\s*(\d+)",runner)
+core_schema=int(core_schema_match.group(1)) if core_schema_match else -1
+bootstrap_schema=int(bootstrap_schema_match.group(1)) if bootstrap_schema_match else -2
+add('Bootstrap aceita schema canônico',core_schema==bootstrap_schema and core_schema>0,f'core={core_schema}; bootstrap={bootstrap_schema}')
+add('Bootstrap rejeita somente schema futuro','if($bootstrapSchema -gt $bootstrapSupportedSchema)' in runner,'limite explícito e versionado')
+workflow_path=ROOT/'.github/workflows/qa.yml'
+workflow_text=workflow_path.read_text(encoding='utf-8') if workflow_path.exists() else ''
+add('GitHub Actions não possui gatilho automático',workflow_path.exists() and 'workflow_call:' in workflow_text and all(x not in workflow_text for x in ('push:', 'pull_request:', 'schedule:', 'workflow_dispatch:')),'somente reusable workflow sem trigger autônomo')
+add('GitHub Actions não aloca runner',workflow_path.exists() and 'if: ${{ false }}' in workflow_text,'jobs hard-disabled antes de runner allocation')
+
 # PowerShell #27558 regression: List<T> created by New-Object can throw on @($list).
 ps_text='\n'.join(p.read_text(encoding='utf-8-sig') for p in ROOT.rglob('*') if p.is_file() and p.suffix.lower() in ('.ps1','.psm1'))
 legacy_lists=re.findall(r'New-Object\s+System\.Collections\.Generic\.List\s*\[',ps_text,re.I)
