@@ -6,11 +6,11 @@
   <img alt="Windows Agent" src="https://img.shields.io/badge/Agent-Windows%20x64-0078D4">
   <img alt="Control Plane" src="https://img.shields.io/badge/Control%20Plane-Docker-2496ED">
   <img alt="Node" src="https://img.shields.io/badge/Node-24%20LTS-339933">
-  <img alt="Version" src="https://img.shields.io/badge/version-3.0.0--RC-1F6FEB">
+  <img alt="Version" src="https://img.shields.io/badge/version-3.0.1-1F6FEB">
 </p>
 
 > [!IMPORTANT]
-> **3.0.0-RC é Release Candidate.** O código, contratos e pacotes passaram pelos gates automatizados disponíveis no ambiente de build, mas ainda exigem homologação real em Windows, Docker/WSL2, PostgreSQL e SQLBackupAndFTP antes de uso em produção.
+> **3.0.1 é a linha Stable.** Ela incorpora as correções encontradas na homologação real da 3.0.0-RC. Os gates automatizados continuam obrigatórios e cada ambiente deve validar instalação, boot, backup e restauração reais antes de uso crítico.
 
 ## O que é a 3.0
 
@@ -38,13 +38,13 @@ REST   GraphQL   WSS
 
 PostgreSQL é a fonte de verdade de comandos, inventário, auditoria e outbox. A entrega ao agente é assíncrona e tolera reconexão.
 
-## Artefatos 3.0.0-RC
+## Artefatos 3.0.1
 
-- `SQLBackupAndFTP-AutoRunner-Setup-v3.0.0-RC.exe`: instalação/update/reparo do aplicativo Windows.
-- `SQLBackupAndFTP-AutoRunner-v3.0.0-RC-Portable.zip`: execução portátil.
-- `SQLBackupAndFTP-AutoRunner-v3.0.0-RC-Source.zip`: fonte auditável completa.
-- `SQLBackupAndFTP-AutoRunner-v3.0.0-RC-ControlPlane.zip`: pacote focado no deploy Docker da central.
-- `SQLBackupAndFTP-AutoRunner-v3.0.0-RC-QA-Evidence.zip`: relatórios e evidências automatizadas.
+- `SQLBackupAndFTP-AutoRunner-Setup-v3.0.1.exe`: instalação/update/reparo do aplicativo Windows.
+- `SQLBackupAndFTP-AutoRunner-v3.0.1-Portable.zip`: execução portátil.
+- `SQLBackupAndFTP-AutoRunner-v3.0.1-Source.zip`: fonte auditável completa.
+- `SQLBackupAndFTP-AutoRunner-v3.0.1-ControlPlane.zip`: pacote focado no deploy Docker da central.
+- `SQLBackupAndFTP-AutoRunner-v3.0.1-QA-Evidence.zip`: relatórios e evidências automatizadas.
 
 ## Control Plane
 
@@ -70,10 +70,14 @@ A detecção local continua dinâmica por Registro 32/64, serviço, processo, Ap
 
 A 3.0 executa remotamente **jobs existentes** usando a CLI suportada pelo produto. Criar/editar/excluir job permanece capability-gated e não é simulado alterando `context.db` diretamente.
 
-## ACL 3.0.0-RC
+### Configuração local simples por padrão
+
+A tela de automação da 3.0.1 mostra por padrão apenas a seleção dos jobs e a situação de cada item. Tipo de backup, retentativas, esperas, reinícios e política de logs ficam ocultos atrás de **Usar configurações avançadas**. No modo simples o AutoRunner executa os jobs em cada boot, sem retentativas automáticas, usando o tipo `Default` da CLI e parâmetros internos seguros sem exigir conhecimento técnico do operador.
+
+## ACL 3.0.1
 
 > [!WARNING]
-> Por decisão explícita de produto, a 3.0.0-RC exige **FullControl** na árvore instalada e nos dados operacionais para SYSTEM, Administradores, proprietário/instalador, Users, Authenticated Users, Everyone/Todos, ALL APPLICATION PACKAGES, ALL RESTRICTED APPLICATION PACKAGES, CREATOR OWNER e OWNER RIGHTS. Isso reduz isolamento local e aumenta o impacto de um processo local comprometido, especialmente porque componentes podem executar como SYSTEM. O requisito e o risco aceito estão em `docs/3.0.0-RC/adr/ADR-003-ACL-FULL-CONTROL.md`.
+> Por decisão explícita de produto, a 3.0.1 mantém **FullControl** na árvore instalada e nos dados operacionais para SYSTEM, Administradores, proprietário/instalador, Users, Authenticated Users, Everyone/Todos, ALL APPLICATION PACKAGES, ALL RESTRICTED APPLICATION PACKAGES, CREATOR OWNER e OWNER RIGHTS. `CREATOR OWNER` é aplicado como ACE inherit-only na raiz, conforme a semântica do Windows, e não é exigido como SID efetivo em cada arquivo filho. Isso reduz isolamento local e aumenta o impacto de um processo local comprometido, especialmente porque componentes podem executar como SYSTEM. O requisito e o risco aceito estão em `docs/3.0.0-RC/adr/ADR-003-ACL-FULL-CONTROL.md`.
 
 Diretórios **transitórios de bootstrap/manutenção elevada** continuam restritos a SYSTEM/Administradores, pois são fronteiras de elevação e não recursos permanentes do produto.
 
@@ -129,6 +133,7 @@ python tests/V221-Regression-QA.py
 python tests/V230-Regression-QA.py
 python tests/V235-Regression-QA.py
 python tests/V300-Regression-QA.py
+python tests/V301-Regression-QA.py
 python tests/ControlPlane-Syntax-QA.py
 python tests/ControlPlane-Contract-QA.py
 python tests/Behavioral-Model.py
@@ -139,9 +144,9 @@ python build/Build-Release.py --root . --output dist
 
 O gate nativo Windows continua em `scripts/Invoke-QA.ps1`.
 
-## Documentação 3.0
+## Documentação 3.x
 
-Comece por [`docs/3.0.0-RC/README.md`](docs/3.0.0-RC/README.md). O checklist de homologação está em [`docs/3.0.0-RC/HOMOLOGACAO_3_0_0_RC.md`](docs/3.0.0-RC/HOMOLOGACAO_3_0_0_RC.md) e as limitações atuais em [`KNOWN_LIMITATIONS.md`](docs/3.0.0-RC/KNOWN_LIMITATIONS.md).
+A arquitetura nasceu na documentação de design [`docs/3.0.0-RC/README.md`](docs/3.0.0-RC/README.md). Para a Stable atual use [`docs/HOMOLOGACAO_3_0_1.md`](docs/HOMOLOGACAO_3_0_1.md) e [`docs/NOTAS_DA_VERSAO.md`](docs/NOTAS_DA_VERSAO.md).
 
 ## Nota sobre 2.3.5 RC
 

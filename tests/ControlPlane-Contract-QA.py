@@ -7,7 +7,7 @@ ROOT=Path(__file__).resolve().parents[1]; RESULTS=[]
 def rd(p): return (ROOT/p).read_text(encoding='utf-8-sig')
 def add(n,p,d): RESULTS.append({'name':n,'passed':bool(p),'detail':d}); print(f"[{'PASS' if p else 'FAIL'}] {n}: {d}")
 version=rd('VERSION').strip(); channel=rd('RELEASE_CHANNEL').strip()
-add('Versão 3.0.0-RC',version=='3.0.0' and channel.upper()=='RC',f'{version}-{channel}')
+add('Versão 3.0.1 Stable',version=='3.0.1' and channel.upper()=='STABLE',f'{version}-{channel}')
 compose=yaml.safe_load(rd('deploy/docker/docker-compose.yml'))
 services=compose.get('services',{})
 add('Compose contém plano de controle completo',all(x in services for x in ('postgres','domain-migrate','auth-migrate','bootstrap-admin','ms-a','ms-b','ms-c','caddy')),', '.join(services))
@@ -40,12 +40,12 @@ for label,tokens in {
  'GraphQL limita corpo e taxa':['graphqlMaxBodyBytes','graphqlRequestsPerMinute'],
  'Introspection controlável':['graphqlAllowIntrospection'],
 }.items(): add(label,all(t in msb for t in tokens),', '.join(tokens))
-msa=rd('services/ms-a-rest/src/server.ts')+rd('services/ms-a-rest/src/routes.ts')+rd('services/ms-a-rest/src/auth.ts')
+msa=rd('services/ms-a-rest/src/app.ts')+rd('services/ms-a-rest/src/server.ts')+rd('services/ms-a-rest/src/routes.ts')+rd('services/ms-a-rest/src/auth.ts')
 add('Admin Better Auth sensível passa pelo RBAC do produto','/api-key/' in msa and '/organization/' in msa and '403' in msa,'rotas cruas sensíveis bloqueadas')
 add('API keys de organização suportadas','apiKey' in msa and 'permissions' in msa,'plugin/escopo presentes')
 authz=rd('services/shared/src/authz.ts')
 add('Autenticação aceita headers Fastify e Fetch',all(x in authz for x in ('headerValue','betterAuthHeaders','typeof headers.get')), 'REST e GraphQL compartilham autenticação sem assumir IncomingHttpHeaders')
-swagger=rd('services/ms-a-rest/src/server.ts')
+swagger=rd('services/ms-a-rest/src/app.ts')
 add('Swagger serve contrato OpenAPI canônico em modo static','contracts/openapi.yaml' in swagger and "mode:'static'" in swagger.replace(' ',''),'contrato YAML único')
 msc=rd('services/ms-c-realtime/src/agent-gateway.ts')+rd('services/ms-c-realtime/src/ui-gateway.ts')+rd('services/ms-c-realtime/src/server.ts')
 for label,tokens in {
@@ -91,6 +91,14 @@ for rel in ['deploy/windows/Backup-ControlPlane.ps1','deploy/windows/Restore-Con
 impl=[*ROOT.glob('services/**/*.ts'),*ROOT.glob('agent/remote-control/*.ps1'),*ROOT.glob('agent/remote-control/*.psm1'),ROOT/'contracts/openapi.yaml',ROOT/'contracts/schema.graphql']
 empty=[str(x.relative_to(ROOT)) for x in impl if x.stat().st_size==0]
 add('Implementação 3.0 não contém placeholders vazios',not empty,'nenhum' if not empty else ', '.join(empty))
+vercel=json.loads(rd('vercel.json'))
+vroutes={x.get('source'):x.get('destination') for x in vercel.get('rewrites',[])}
+vfunctions=vercel.get('functions',{})
+add('Vercel expõe painel, REST, GraphQL e WSS',all(x in vroutes for x in ('/','/api/v1/:path*','/graphql','/ws/agent','/ws/ui')),'rotas públicas mapeadas')
+add('Vercel WSS usa função de longa duração',vfunctions.get('api/realtime.ts',{}).get('maxDuration')==300,'maxDuration=300')
+add('Servidores Node preservam Docker e exportam para Vercel',"if(!process.env.VERCEL)" in msb and "export default server" in msb and "if(!process.env.VERCEL)" in rd('services/ms-c-realtime/src/server.ts') and "export default server" in rd('services/ms-c-realtime/src/server.ts'),'listen local + export serverless')
+add('Webhooks têm drain serverless e worker WSS','drainWebhookQueue' in rd('services/ms-b-query-events/src/serverless-webhooks.ts') and 'process.env.VERCEL' in msa and 'startWebhookWorkers' in rd('services/ms-c-realtime/src/server.ts'),'REST/GraphQL drenam + realtime mantém worker')
+add('URL WSS deriva da URL pública da Vercel sem localhost','VERCEL_URL' in configtxt and 'publicWsEnv' in configtxt and 'config.publicWsUrl' in rd('services/ms-a-rest/src/domain.ts'),'enrollment/realtime com URL pública')
 report={'tool':'ControlPlane-Contract-QA.py','passed':sum(r['passed'] for r in RESULTS),'failed':sum(not r['passed'] for r in RESULTS),'results':RESULTS}
 (ROOT/'test-results').mkdir(exist_ok=True)
 (ROOT/'test-results/control-plane-contract.json').write_text(json.dumps(report,ensure_ascii=False,indent=2),encoding='utf-8')

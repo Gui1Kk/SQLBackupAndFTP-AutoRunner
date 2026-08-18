@@ -5,6 +5,7 @@ import { databaseReady, pool } from '../../shared/src/db.ts';
 import { log } from '../../shared/src/logger.ts';
 import { acceptAgentSocket, markStaleAgentsOffline, startCommandDispatcher } from './agent-gateway.ts';
 import { acceptUiSocket } from './ui-gateway.ts';
+import { startWebhookWorkers } from '../../ms-b-query-events/src/webhooks.ts';
 
 process.env.SERVICE_NAME='ms-c-realtime';
 const abort=new AbortController();
@@ -30,5 +31,11 @@ server.on('upgrade',(req,socket,head)=>{
 const ping=setInterval(()=>{for(const ws of wss.clients){if(ws.isAlive===false){ws.terminate();continue;}ws.isAlive=false;ws.ping();}},30000);ping.unref?.();
 const stale=setInterval(()=>markStaleAgentsOffline().catch(()=>{}),30000);stale.unref?.();
 await startCommandDispatcher(abort.signal);
-server.listen(config.msCPort,config.serviceHost,()=>log('info','ms_c_listening',{port:config.msCPort}));
-async function shutdown(signal){log('info','shutdown',{signal});abort.abort();clearInterval(ping);clearInterval(stale);clearInterval(upgradeGc);for(const ws of wss.clients)try{ws.close(1001,'shutdown');}catch{}await new Promise((resolve)=>server.close(resolve));await pool.end();process.exit(0);}for(const sig of ['SIGTERM','SIGINT'])process.on(sig,()=>shutdown(sig));
+if(process.env.VERCEL) startWebhookWorkers(abort.signal);
+if(!process.env.VERCEL){
+  server.listen(config.msCPort,config.serviceHost,()=>log('info','ms_c_listening',{port:config.msCPort}));
+  async function shutdown(signal){log('info','shutdown',{signal});abort.abort();clearInterval(ping);clearInterval(stale);clearInterval(upgradeGc);for(const ws of wss.clients)try{ws.close(1001,'shutdown');}catch{}await new Promise((resolve)=>server.close(resolve));await pool.end();process.exit(0);}
+  for(const sig of ['SIGTERM','SIGINT'])process.on(sig,()=>shutdown(sig));
+}
+
+export default server;

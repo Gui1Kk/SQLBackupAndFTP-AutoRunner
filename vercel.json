@@ -1,0 +1,86 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": null,
+  "fluid": true,
+  "functions": {
+    "api/rest.ts": {
+      "maxDuration": 60,
+      "includeFiles": "contracts/openapi.yaml"
+    },
+    "api/panel.ts": {
+      "maxDuration": 10,
+      "includeFiles": "apps/central-web/**"
+    },
+    "api/asset.ts": {
+      "maxDuration": 10,
+      "includeFiles": "assets/AutoRunner.png"
+    },
+    "api/query.ts": {
+      "maxDuration": 60
+    },
+    "api/realtime.ts": {
+      "maxDuration": 300
+    }
+  },
+  "rewrites": [
+    {
+      "source": "/",
+      "destination": "/api/panel?file=index.html"
+    },
+    {
+      "source": "/app.js",
+      "destination": "/api/panel?file=app.js"
+    },
+    {
+      "source": "/app.css",
+      "destination": "/api/panel?file=app.css"
+    },
+    {
+      "source": "/assets/AutoRunner.png",
+      "destination": "/api/asset"
+    },
+    {
+      "source": "/graphql",
+      "destination": "/api/query"
+    },
+    {
+      "source": "/ws/agent",
+      "destination": "/api/realtime"
+    },
+    {
+      "source": "/ws/ui",
+      "destination": "/api/realtime"
+    },
+    {
+      "source": "/api/auth/:path*",
+      "destination": "/api/rest"
+    },
+    {
+      "source": "/api/v1/:path*",
+      "destination": "/api/rest"
+    },
+    {
+      "source": "/health/:path*",
+      "destination": "/api/rest"
+    },
+    {
+      "source": "/docs/:path*",
+      "destination": "/api/rest"
+    }
+  ],
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        {
+          "key": "Strict-Transport-Security",
+          "value": "max-age=63072000; includeSubDomains; preload"
+        },
+        {
+          "key": "X-Content-Type-Options",
+          "value": "nosniff"
+        }
+      ]
+    }
+  ]
+}

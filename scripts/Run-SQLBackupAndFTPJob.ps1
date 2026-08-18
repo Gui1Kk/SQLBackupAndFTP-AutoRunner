@@ -45,7 +45,10 @@ try {
     if($bootstrapProduct -ne 'SQLBackupAndFTP AutoRunner'){throw 'Configuração bootstrap pertence a outro produto ou está incompleta.'}
     $bootstrapSchemaProperty=$bootstrapRaw.PSObject.Properties['SchemaVersion']
     $bootstrapSchema=if($bootstrapSchemaProperty){[int]$bootstrapSchemaProperty.Value}else{0}
-    if($bootstrapSchema -gt 4){throw "Schema bootstrap $bootstrapSchema é mais novo que o runner suporta."}
+    # Este limite precisa acompanhar $script:ConfigSchemaVersion no módulo.
+    # V301-Regression-QA.py compara os dois valores para impedir drift futuro.
+    $bootstrapSupportedSchema=6
+    if($bootstrapSchema -gt $bootstrapSupportedSchema){throw "Schema bootstrap $bootstrapSchema é mais novo que o runner suporta ($bootstrapSupportedSchema)."}
     $bootstrapSecurityProperty=$bootstrapRaw.PSObject.Properties['Security']
     $bootstrapSecurity=if($bootstrapSecurityProperty){$bootstrapSecurityProperty.Value}else{$null}
     $expectedCoreHash=''
@@ -165,7 +168,7 @@ try {
         $hasMutex = $true
         Write-RunnerLog 'Mutex abandonado recuperado; a execucao anterior foi interrompida abruptamente.' 'WARN'
     }
-    if (-not $hasMutex) {
+       if (-not $hasMutex) {
         Write-RunnerLog 'Outra execução já está ativa. Esta instância não executará jobs.' 'WARN'
         # No boot isso é condição normal; em teste manual, devolve código informativo para
         # não comunicar falsamente que um backup foi disparado.
@@ -194,8 +197,8 @@ try {
     # dentro do intervalo, mas não bloqueia um job novo ou um job que falhou anteriormente.
     if (-not $Force -and $Trigger -eq 'Startup' -and [int]$config.Execution.MinimumIntervalHours -gt 0) {
         $allWithinInterval = $true
-        $preflightMessages = New-Object System.Collections.Generic.List[string]
-        $preflightResults = New-Object System.Collections.Generic.List[object]
+        $preflightMessages = [System.Collections.Generic.List[string]]::new()
+        $preflightResults = [System.Collections.Generic.List[object]]::new()
         foreach ($configuredJob in $configuredJobs) {
             $configuredName = [string]$configuredJob.Name
             if ([string]::IsNullOrWhiteSpace($configuredName)) { $allWithinInterval = $false; break }
@@ -295,7 +298,7 @@ try {
         throw 'Configuração sem jobs.'
     }
 
-    $results = New-Object System.Collections.Generic.List[object]
+    $results = [System.Collections.Generic.List[object]]::new()
     $processedJobKeys = @{}
     $retryCount = [int]$config.Execution.RetryCount
     $retryDelay = [int]$config.Execution.RetryDelayMinutes

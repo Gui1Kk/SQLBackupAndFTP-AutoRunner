@@ -1,4 +1,4 @@
-# Contracts 3.0.0-RC
+# Contracts 3.0.1
 
 - `openapi.yaml`: contrato REST público do MS-A, OpenAPI 3.1.
 - `schema.graphql`: contrato do MS-B usado pelo aplicativo central e integrações de consulta.

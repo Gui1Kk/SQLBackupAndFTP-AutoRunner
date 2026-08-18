@@ -1,7 +1,7 @@
 ﻿Set-StrictMode -Version 2.0
 
-$script:AutoRunnerVersion = '3.0.0'
-$script:AutoRunnerReleaseChannel = 'RC'
+$script:AutoRunnerVersion = '3.0.1'
+$script:AutoRunnerReleaseChannel = 'Stable'
 $script:ConfigSchemaVersion = 6
 $script:DefaultSupportDir = Join-Path $env:ProgramData 'SQLBackupAndFTPAuto'
 $script:DefaultTaskName = 'SQLBackupAndFTP AutoRunner'
@@ -139,6 +139,7 @@ function Get-AutoRunnerUserSettings {
         TutorialDoNotShowAgain = $false
         TutorialVersion = ''
         UpdateCheckEnabled = $true
+        UseAdvancedSettings = $false
         LastUpdateCheckUtc = ''
         SkippedUpdateTag = ''
     }
@@ -147,7 +148,7 @@ function Get-AutoRunnerUserSettings {
         $item = Get-ItemProperty -LiteralPath $script:UserRegistryPath -ErrorAction Stop
         foreach ($name in @($defaults.Keys)) {
             $value = Get-AutoRunnerPropertyValue -InputObject $item -Name $name -Default $defaults[$name]
-            if ($name -in @('TutorialCompleted','TutorialDoNotShowAgain','UpdateCheckEnabled')) {
+            if ($name -in @('TutorialCompleted','TutorialDoNotShowAgain','UpdateCheckEnabled','UseAdvancedSettings')) {
                 $defaultBoolean=[bool]$defaults[$name]
                 try { $defaults[$name] = ConvertTo-AutoRunnerBoolean -Value $value -Default $defaultBoolean -Name $name } catch { $defaults[$name] = $defaultBoolean }
             }
@@ -169,6 +170,7 @@ function Set-AutoRunnerUserSettings {
         [AllowNull()][bool]$TutorialDoNotShowAgain,
         [AllowNull()][string]$TutorialVersion,
         [AllowNull()][bool]$UpdateCheckEnabled,
+        [AllowNull()][bool]$UseAdvancedSettings,
         [AllowNull()][string]$LastUpdateCheckUtc,
         [AllowNull()][string]$SkippedUpdateTag
     )
@@ -189,6 +191,7 @@ function Set-AutoRunnerUserSettings {
     if ($PSBoundParameters.ContainsKey('TutorialCompleted')) { $values['TutorialCompleted'] = if($TutorialCompleted){1}else{0} }
     if ($PSBoundParameters.ContainsKey('TutorialDoNotShowAgain')) { $values['TutorialDoNotShowAgain'] = if($TutorialDoNotShowAgain){1}else{0} }
     if ($PSBoundParameters.ContainsKey('UpdateCheckEnabled')) { $values['UpdateCheckEnabled'] = if($UpdateCheckEnabled){1}else{0} }
+    if ($PSBoundParameters.ContainsKey('UseAdvancedSettings')) { $values['UseAdvancedSettings'] = if($UseAdvancedSettings){1}else{0} }
     if ($values.Contains('PreferredSqlBackupPath') -or $values.Contains('DetectionSource')) { $values['DetectionUpdatedUtc'] = [DateTime]::UtcNow.ToString('o') }
     foreach ($entry in $values.GetEnumerator()) {
         $type = if ($entry.Value -is [int]) { 'DWord' } else { 'String' }
@@ -271,7 +274,7 @@ function Get-AutoRunnerUpdateInfo {
     $releases=@(Invoke-RestMethod -Uri $uri -Headers $headers -Method Get -TimeoutSec $TimeoutSeconds -ErrorAction Stop)
     try{Set-AutoRunnerUserSettings -LastUpdateCheckUtc ([DateTime]::UtcNow.ToString('o'))}catch{}
     $current=Get-AutoRunnerCurrentReleaseDescriptor
-    $candidates=New-Object System.Collections.Generic.List[object]
+    $candidates=[System.Collections.Generic.List[object]]::new()
     foreach($release in $releases){
         if([bool](Get-AutoRunnerPropertyValue -InputObject $release -Name 'draft' -Default $false)){continue}
         $prerelease=[bool](Get-AutoRunnerPropertyValue -InputObject $release -Name 'prerelease' -Default $false)
@@ -628,7 +631,7 @@ function New-AutoRunnerManifest {
         [Parameter(Mandatory = $true)][string]$OutputPath
     )
 
-    $items = New-Object System.Collections.Generic.List[object]
+    $items = [System.Collections.Generic.List[object]]::new()
     foreach ($relative in $RelativePaths | Sort-Object -Unique) {
         $full = Join-Path $RootPath $relative
         if (-not (Test-Path -LiteralPath $full -PathType Leaf)) { throw "Arquivo do manifesto nao encontrado: $full" }
@@ -655,7 +658,7 @@ function Test-AutoRunnerManifest {
         [Parameter(Mandatory = $true)][string]$ManifestPath,
         [string[]]$RequiredPaths
     )
-    $issues = New-Object System.Collections.Generic.List[string]
+    $issues = [System.Collections.Generic.List[string]]::new()
     $defaultRequired = @(
         'modules/AutoRunner.Core.psm1',
         'scripts/Run-SQLBackupAndFTPJob.ps1',
@@ -721,7 +724,7 @@ function Test-AutoRunnerManifest {
 function Test-AutoRunnerPackageChecksums {
     [CmdletBinding()]
     param([Parameter(Mandatory = $true)][string]$RootPath, [string]$ChecksumPath = (Join-Path $RootPath 'SHA256SUMS.txt'))
-    $issues = New-Object System.Collections.Generic.List[string]
+    $issues = [System.Collections.Generic.List[string]]::new()
     if (-not (Test-Path -LiteralPath $ChecksumPath -PathType Leaf)) {
         return [pscustomobject]@{ IsPresent=$false; IsValid=$false; Issues=@('SHA256SUMS.txt ausente.') }
     }
@@ -858,7 +861,7 @@ function Find-SqlBakCliLimited {
         [ValidateRange(1,8)][int]$MaxDepth=5,
         [ValidateRange(100,50000)][int]$MaxDirectories=12000
     )
-    $results=New-Object System.Collections.Generic.List[string]
+    $results=[System.Collections.Generic.List[string]]::new()
     if(-not(Test-Path -LiteralPath $Root -PathType Container)){return @()}
     $fullRoot=[IO.Path]::GetFullPath($Root)
     $queue=New-Object 'System.Collections.Generic.Queue[object]'
@@ -890,7 +893,7 @@ function Find-SqlBakCliLimited {
 function Get-AutoRunnerFixedDriveRoots {
     [CmdletBinding()]
     param()
-    $roots=New-Object System.Collections.Generic.List[string]
+    $roots=[System.Collections.Generic.List[string]]::new()
     try{
         foreach($drive in [IO.DriveInfo]::GetDrives()){
             try{
@@ -911,7 +914,7 @@ function Find-SqlBackupAndFTPInstallations {
         [ValidateRange(1,8)][int]$SearchDepth = 4
     )
     if (-not (Test-AutoRunnerIsWindows)) { throw 'Detecção do SQLBackupAndFTP exige Windows.' }
-    $candidateDirs = New-Object System.Collections.Generic.List[object]
+    $candidateDirs = [System.Collections.Generic.List[object]]::new()
     function Add-SqlBakCandidate {
         param([AllowNull()][string]$Path,[string]$Source,[int]$Score)
         $full = Resolve-SqlBackupAndFTPDirectory -Path $Path
@@ -1039,7 +1042,7 @@ function Find-SqlBackupAndFTPInstallations {
         }
     }
 
-    $valid = New-Object System.Collections.Generic.List[object]
+    $valid = [System.Collections.Generic.List[object]]::new()
     foreach ($group in @($candidateDirs | Group-Object { $_.Path.ToLowerInvariant() })) {
         $validated = Test-SqlBackupAndFTPDirectory -Path ([string]$group.Group[0].Path)
         if (-not $validated) { continue }
@@ -1109,7 +1112,7 @@ function Get-SqlBackupAndFTPInstall {
 function Get-SqlBakConfigurationRoot {
     [CmdletBinding()]
     param([Parameter(Mandatory = $true)][string]$InstallDir)
-    $candidates = New-Object System.Collections.Generic.List[object]
+    $candidates = [System.Collections.Generic.List[object]]::new()
     $seen = @{}
     function Add-ConfigRootCandidate {
         param([AllowNull()][string]$Value,[string]$Source,[string]$BaseDirectory)
@@ -1118,7 +1121,7 @@ function Get-SqlBakConfigurationRoot {
             $expanded = [Environment]::ExpandEnvironmentVariables($Value.Trim().Trim('"').Trim("'"))
             if (-not [IO.Path]::IsPathRooted($expanded)) { $expanded = Join-Path $BaseDirectory $expanded }
             $expanded = [IO.Path]::GetFullPath($expanded).TrimEnd('\')
-            $possibleRoots = New-Object System.Collections.Generic.List[string]
+            $possibleRoots = [System.Collections.Generic.List[string]]::new()
             $possibleRoots.Add($expanded)
             if ([IO.Path]::GetFileName($expanded) -ieq 'context.db') { $possibleRoots.Add((Split-Path -Parent (Split-Path -Parent $expanded))) }
             elseif ([IO.Path]::GetFileName($expanded) -ieq 'Db') { $possibleRoots.Add((Split-Path -Parent $expanded)) }
@@ -1168,66 +1171,98 @@ function Get-SqlBakConfigurationRoot {
 function Get-AutoRunnerProductFullControlSidList {
     [CmdletBinding()]
     param()
-    $list=New-Object System.Collections.Generic.List[string]
+    $list=[System.Collections.Generic.List[string]]::new()
     foreach($sid in @('S-1-5-18','S-1-5-32-544','S-1-5-32-545','S-1-5-11','S-1-1-0','S-1-15-2-1','S-1-15-2-2','S-1-3-0','S-1-3-4')){[void]$list.Add($sid)}
     try{$current=[Security.Principal.WindowsIdentity]::GetCurrent().User.Value;if($current -and -not $list.Contains($current)){[void]$list.Add($current)}}catch{}
-    return @($list)
+    return $list.ToArray()
+}
+
+function Get-AutoRunnerProductEffectiveFullControlSidList {
+    [CmdletBinding()]
+    param()
+    # CREATOR OWNER (S-1-3-0) é um placeholder de herança. Ele deve existir na
+    # pasta raiz como ACE inherit-only; nos filhos o Windows materializa a
+    # permissão para o SID do criador/owner, portanto não é correto exigir que
+    # S-1-3-0 apareça como ACE efetiva em cada arquivo.
+    return @((Get-AutoRunnerProductFullControlSidList) | Where-Object { $_ -ne 'S-1-3-0' })
+}
+
+function Invoke-AutoRunnerIcacls {
+    [CmdletBinding()]
+    param([Parameter(Mandatory=$true)][string[]]$Arguments)
+    $icacls=Join-Path $env:SystemRoot 'System32\icacls.exe'
+    if(-not(Test-Path -LiteralPath $icacls -PathType Leaf)){throw "icacls.exe não encontrado em $icacls"}
+    $output=@(& $icacls @Arguments 2>&1 | ForEach-Object { [string]$_ })
+    $code=$LASTEXITCODE
+    if($code -ne 0){throw ('icacls falhou com código '+$code+': '+($output -join ' | '))}
+    return $output
 }
 
 function Set-AutoRunnerProductFullControlAcl {
     [CmdletBinding()]
     param([Parameter(Mandatory=$true)][string]$Path)
-    if (-not (Test-AutoRunnerAdministrator)) { throw 'Administrador necessário para aplicar a política FullControl 3.0.0-RC.' }
+    if (-not (Test-AutoRunnerAdministrator)) { throw 'Administrador necessário para aplicar a política FullControl 3.0.1.' }
     if (-not (Test-Path -LiteralPath $Path)) { New-Item -ItemType Directory -Path $Path -Force | Out-Null }
-    if (Test-Path -LiteralPath $Path -PathType Container) {
-        $inspection=Get-AutoRunnerTreeInspection -Path $Path
-        if(-not $inspection.InspectionSucceeded){throw ('Falha ao inspecionar árvore antes da ACL: '+($inspection.Errors -join '; '))}
-        if($inspection.HasReparsePoint){throw ('ACL recusada: a árvore contém junction/link simbólico: '+($inspection.ReparsePoints -join '; '))}
-    }
+    if (-not (Test-Path -LiteralPath $Path -PathType Container)) { throw "A raiz da política ACL precisa ser uma pasta: $Path" }
+
+    $inspection=Get-AutoRunnerTreeInspection -Path $Path
+    if(-not $inspection.InspectionSucceeded){throw ('Falha ao inspecionar árvore antes da ACL: '+($inspection.Errors -join '; '))}
+    if($inspection.HasReparsePoint){throw ('ACL recusada: a árvore contém junction/link simbólico: '+($inspection.ReparsePoints -join '; '))}
+
     $required=@(Get-AutoRunnerProductFullControlSidList)
-    $owner=$null
-    try{$owner=[Security.Principal.WindowsIdentity]::GetCurrent().User}catch{}
-    if(-not $owner){$owner=New-Object Security.Principal.SecurityIdentifier('S-1-5-32-544')}
-    $targets=New-Object System.Collections.Generic.List[string]
-    [void]$targets.Add($Path)
-    if(Test-Path -LiteralPath $Path -PathType Container){
-        foreach($item in @(Get-ChildItem -LiteralPath $Path -Force -Recurse -ErrorAction Stop)){[void]$targets.Add($item.FullName)}
-    }
-    # Cada item recebe ACE explícita, em vez de depender somente de herança. Isso é
-    # intencional: a 3.0.0-RC exige FullControl observável em todos os recursos.
-    foreach($target in @($targets | Sort-Object { $_.Length })){
-        $item=Get-Item -LiteralPath $target -Force -ErrorAction Stop
-        $security=if($item.PSIsContainer){New-Object Security.AccessControl.DirectorySecurity}else{New-Object Security.AccessControl.FileSecurity}
-        $security.SetAccessRuleProtection($true,$false)
-        try{$security.SetOwner($owner)}catch{}
-        foreach($sidText in $required){
-            $sid=New-Object Security.Principal.SecurityIdentifier($sidText)
-            if($item.PSIsContainer){
-                $rule=New-Object Security.AccessControl.FileSystemAccessRule($sid,[Security.AccessControl.FileSystemRights]::FullControl,([Security.AccessControl.InheritanceFlags]::ContainerInherit -bor [Security.AccessControl.InheritanceFlags]::ObjectInherit),[Security.AccessControl.PropagationFlags]::None,[Security.AccessControl.AccessControlType]::Allow)
-            }else{
-                $rule=New-Object Security.AccessControl.FileSystemAccessRule($sid,[Security.AccessControl.FileSystemRights]::FullControl,[Security.AccessControl.AccessControlType]::Allow)
-            }
-            [void]$security.AddAccessRule($rule)
+    $creatorOwner='S-1-3-0'
+
+    # Habilite herança primeiro e aplique cada SID em uma chamada separada.
+    # Além de produzir erros por identidade (muito mais diagnosticáveis), isso
+    # evita qualquer ambiguidade de parsing do icacls com vários SID:perm após
+    # um único /grant:r. SIDs numéricos são prefixados por * conforme a sintaxe
+    # oficial do icacls.
+    [void](Invoke-AutoRunnerIcacls -Arguments @($Path,'/inheritance:e','/Q'))
+    foreach($sidText in $required){
+        $permission=if($sidText -eq $creatorOwner){
+            # CREATOR OWNER é propositalmente inherit-only.
+            ('*{0}:(OI)(CI)(IO)F' -f $sidText)
+        }else{
+            ('*{0}:(OI)(CI)F' -f $sidText)
         }
-        Set-Acl -LiteralPath $target -AclObject $security -ErrorAction Stop
+        [void](Invoke-AutoRunnerIcacls -Arguments @($Path,'/grant:r',$permission,'/Q'))
     }
+
+    # O staging pode carregar ACLs protegidas herdadas do ZIP/cópia anterior.
+    # Reseta cada filho direto para a ACL herdada da raiz já normalizada. O uso
+    # de /T faz a propagação para toda a subárvore e /C apenas continua para
+    # que o erro possa ser reportado pelo gate final com o caminho exato.
+    foreach($child in @(Get-ChildItem -LiteralPath $Path -Force -ErrorAction Stop)){
+        [void](Invoke-AutoRunnerIcacls -Arguments @($child.FullName,'/reset','/T','/C','/Q'))
+    }
+
+    # Garanta que a própria raiz continue com herança habilitada após a
+    # normalização dos filhos.
+    [void](Invoke-AutoRunnerIcacls -Arguments @($Path,'/inheritance:e','/Q'))
+
     $policy=Test-AutoRunnerProductFullControlAcl -Path $Path
-    if(-not $policy.IsCompliant){throw ('Política FullControl 3.0.0-RC não aplicada integralmente: '+($policy.Issues -join '; '))}
+    if(-not $policy.IsCompliant){
+        $preview=@($policy.Issues | Select-Object -First 20)
+        $suffix=if($policy.Issues.Count -gt $preview.Count){"; ... e $($policy.Issues.Count-$preview.Count) ocorrência(s) adicional(is)"}else{''}
+        throw ('Política FullControl 3.0.1 não aplicada integralmente: '+($preview -join '; ')+$suffix)
+    }
     return Get-Acl -LiteralPath $Path
 }
 
 function Test-AutoRunnerProductFullControlAcl {
     [CmdletBinding()]
     param([Parameter(Mandatory=$true)][string]$Path)
-    $issues=New-Object System.Collections.Generic.List[string]
+    $issues=[System.Collections.Generic.List[string]]::new()
     if(-not(Test-Path -LiteralPath $Path)){return [pscustomobject]@{IsCompliant=$false;Issues=@("Caminho ausente: $Path")}}
     try{
-        $required=@(Get-AutoRunnerProductFullControlSidList)
-        $targets=New-Object System.Collections.Generic.List[string];$targets.Add($Path)
+        $effectiveRequired=@(Get-AutoRunnerProductEffectiveFullControlSidList)
+        $targets=[System.Collections.Generic.List[string]]::new();[void]$targets.Add($Path)
         if(Test-Path -LiteralPath $Path -PathType Container){foreach($item in @(Get-ChildItem -LiteralPath $Path -Force -Recurse -ErrorAction Stop)){[void]$targets.Add($item.FullName)}}
+
         foreach($target in $targets){
             $acl=Get-Acl -LiteralPath $target -ErrorAction Stop
-            foreach($sidText in $required){
+            if($acl.AreAccessRulesProtected){$issues.Add("$target | herança de ACL desabilitada")}
+            foreach($sidText in $effectiveRequired){
                 $found=$false
                 foreach($entry in @($acl.Access)){
                     try{$sid=$entry.IdentityReference.Translate([Security.Principal.SecurityIdentifier]).Value}catch{$sid=[string]$entry.IdentityReference.Value}
@@ -1236,14 +1271,28 @@ function Test-AutoRunnerProductFullControlAcl {
                 if(-not$found){$issues.Add("$target | SID $sidText sem FullControl efetivo")}
             }
         }
+
+        # CREATOR OWNER é validado somente na raiz e como ACE de herança.
+        $rootAcl=Get-Acl -LiteralPath $Path -ErrorAction Stop
+        $creatorFound=$false
+        foreach($entry in @($rootAcl.Access)){
+            try{$sid=$entry.IdentityReference.Translate([Security.Principal.SecurityIdentifier]).Value}catch{$sid=[string]$entry.IdentityReference.Value}
+            if($sid -ne 'S-1-3-0' -or $entry.AccessControlType -ne [Security.AccessControl.AccessControlType]::Allow){continue}
+            $full=(($entry.FileSystemRights -band [Security.AccessControl.FileSystemRights]::FullControl) -eq [Security.AccessControl.FileSystemRights]::FullControl)
+            $oi=(($entry.InheritanceFlags -band [Security.AccessControl.InheritanceFlags]::ObjectInherit) -ne 0)
+            $ci=(($entry.InheritanceFlags -band [Security.AccessControl.InheritanceFlags]::ContainerInherit) -ne 0)
+            $io=(($entry.PropagationFlags -band [Security.AccessControl.PropagationFlags]::InheritOnly) -ne 0)
+            if($full -and $oi -and $ci -and $io){$creatorFound=$true;break}
+        }
+        if(-not$creatorFound){$issues.Add("$Path | SID S-1-3-0 (CREATOR OWNER) sem FullControl inherit-only OI/CI")}
     }catch{$issues.Add($_.Exception.Message)}
-    return [pscustomobject]@{IsCompliant=($issues.Count -eq 0);Issues=@($issues)}
+    return [pscustomobject]@{IsCompliant=($issues.Count -eq 0);Issues=$issues.ToArray()}
 }
 
 function Test-AutoRunnerExecutionPathSecurity {
     [CmdletBinding()]
     param([Parameter(Mandatory = $true)][string]$ExecutablePath, [switch]$AllowProductFullControlPolicy)
-    $issues=New-Object System.Collections.Generic.List[string]
+    $issues=[System.Collections.Generic.List[string]]::new()
     if(-not(Test-Path -LiteralPath $ExecutablePath -PathType Leaf)){$issues.Add("Executável/DLL ausente: $ExecutablePath");return [pscustomobject]@{IsSafe=$false;Issues=@($issues)}}
     try{
         $full=[IO.Path]::GetFullPath($ExecutablePath)
@@ -1254,7 +1303,7 @@ function Test-AutoRunnerExecutionPathSecurity {
             foreach($unsafe in @(Get-AutoRunnerUnsafeAclEntries -Path $directory)){$issues.Add("ACL gravável por identidade ampla na árvore executável: $unsafe")}
         } else {
             $policy=Test-AutoRunnerProductFullControlAcl -Path $directory
-            if(-not $policy.IsCompliant){foreach($issue in @($policy.Issues)){$issues.Add("ACL 3.0.0-RC não conforme: $issue")}}
+            if(-not $policy.IsCompliant){foreach($issue in @($policy.Issues)){$issues.Add("ACL 3.0.1 não conforme: $issue")}}
         }
         # Um pai gravável pode permitir troca/renomeação do diretório executável. Verifica
         # cada ancestral existente, sem percorrer recursivamente Program Files ou o volume.
@@ -1307,7 +1356,7 @@ function Get-SqlBakJobsFromSqlite {
             $tableCommand = $connection.CreateCommand()
             $tableCommand.CommandText = "SELECT name FROM sqlite_master WHERE type='table' ORDER BY name"
             $reader = $tableCommand.ExecuteReader()
-            $tables = New-Object System.Collections.Generic.List[string]
+            $tables = [System.Collections.Generic.List[string]]::new()
             while ($reader.Read()) { $tables.Add([string]$reader['name']) }
             $reader.Close()
 
@@ -1318,7 +1367,7 @@ function Get-SqlBakJobsFromSqlite {
                 $safeTable = $table.Replace("'", "''")
                 $pragma.CommandText = "PRAGMA table_info('$safeTable')"
                 $columnReader = $pragma.ExecuteReader()
-                $found = New-Object System.Collections.Generic.List[string]
+                $found = [System.Collections.Generic.List[string]]::new()
                 while ($columnReader.Read()) { $found.Add([string]$columnReader['name']) }
                 $columnReader.Close()
                 $nameColumn = @('JobName','Name','Title') | Where-Object { $found -contains $_ } | Select-Object -First 1
@@ -1345,7 +1394,7 @@ function Get-SqlBakJobsFromSqlite {
             $query = $connection.CreateCommand()
             $query.CommandText = 'SELECT {0} FROM [{1}] ORDER BY [{2}]' -f ($selectParts -join ', '), $selectedTable.Replace(']',']]'), $nameColumn.Replace(']',']]')
             $jobReader = $query.ExecuteReader()
-            $jobs = New-Object System.Collections.Generic.List[object]
+            $jobs = [System.Collections.Generic.List[object]]::new()
             while ($jobReader.Read()) {
                 $name = [string]$jobReader['JobName']
                 if ([string]::IsNullOrWhiteSpace($name)) { continue }
@@ -1393,7 +1442,7 @@ function Get-SqlBakJobsFromCli {
     $output = & $CliPath '-listJobs' 2>&1
     $exit = $LASTEXITCODE
     if ($exit -ne 0) { throw "-listJobs retornou codigo ${exit}: $($output -join ' ')" }
-    $names = New-Object System.Collections.Generic.List[string]
+    $names = [System.Collections.Generic.List[string]]::new()
     foreach ($line in @($output)) {
         $text = ([string]$line).Trim()
         if ([string]::IsNullOrWhiteSpace($text)) { continue }
@@ -1413,7 +1462,7 @@ function Get-SqlBakJobsFromCli {
 function Get-SqlBakJobs {
     [CmdletBinding()]
     param([Parameter(Mandatory = $true)]$InstallInfo, [switch]$DisableCliFallback)
-    $errors = New-Object System.Collections.Generic.List[string]
+    $errors = [System.Collections.Generic.List[string]]::new()
     $jobs = @()
     $configuredRoot = [string](Get-AutoRunnerPropertyValue -InputObject $InstallInfo -Name 'ConfigRoot' -Default '')
     if (-not [string]::IsNullOrWhiteSpace($configuredRoot) -and (Test-Path -LiteralPath (Join-Path $configuredRoot 'Db\context.db') -PathType Leaf)) {
@@ -1502,7 +1551,7 @@ function ConvertTo-AutoRunnerCurrentConfig {
     if(-not [string]::IsNullOrWhiteSpace($sourceProduct) -and $sourceProduct -ne 'SQLBackupAndFTP AutoRunner'){throw "Configuração pertence a outro produto: $sourceProduct"}
     # Mesmo no schema atual, normaliza propriedades ausentes e aplica valores padrão.
 
-    $jobs = New-Object System.Collections.Generic.List[object]
+    $jobs = [System.Collections.Generic.List[object]]::new()
     # Somente schemas legados, anteriores à exigência de confirmação explícita,
     # recebem confirmação migrada. Um schema atual malformado nunca ganha confiança.
     $legacyConfirmationDefault = ([int]$schema -lt 3)
@@ -1594,7 +1643,7 @@ function Test-AutoRunnerConfiguration {
         [switch]$RequireSecurityHashes,
         [switch]$RequireExistingCli
     )
-    $issues = New-Object System.Collections.Generic.List[string]
+    $issues = [System.Collections.Generic.List[string]]::new()
     if ([string](Get-AutoRunnerPropertyValue -InputObject $Config -Name 'Product' -Default '') -ne 'SQLBackupAndFTP AutoRunner') { $issues.Add('Produto da configuração inválido.') }
     $schema=0
     try{$schema=[int](Get-AutoRunnerPropertyValue -InputObject $Config -Name 'SchemaVersion' -Default 0)}catch{$issues.Add('Schema da configuração não é numérico.')}
@@ -1776,8 +1825,8 @@ function Remove-AutoRunnerPrivilegedScratchDirectory {
 function Get-AutoRunnerTreeInspection {
     [CmdletBinding()]
     param([Parameter(Mandatory = $true)][string]$Path)
-    $reparsePoints = New-Object System.Collections.Generic.List[string]
-    $errors = New-Object System.Collections.Generic.List[string]
+    $reparsePoints = [System.Collections.Generic.List[string]]::new()
+    $errors = [System.Collections.Generic.List[string]]::new()
     try {
         $full = [IO.Path]::GetFullPath($Path).TrimEnd('\')
         if (-not (Test-Path -LiteralPath $full)) {
@@ -1875,7 +1924,7 @@ function Test-AutoRunnerSupportPath {
 function Get-AutoRunnerUnsafeAclEntries {
     [CmdletBinding()]
     param([Parameter(Mandatory = $true)][string]$Path, [switch]$DenyAnyBroadRead, [switch]$CurrentOnly)
-    $issues = New-Object System.Collections.Generic.List[string]
+    $issues = [System.Collections.Generic.List[string]]::new()
     $broadPattern = '(?i)(^|\\)(S-1-1-0|Everyone|Todos|S-1-5-11|Authenticated Users|Usuários autenticados|Usuarios autenticados|S-1-5-32-545|Users|Usuários|Usuarios)$'
     # Use somente direitos atômicos de escrita. Modify e FullControl são valores
     # compostos que também contêm bits de leitura. Ao incluí-los na máscara, uma
@@ -1889,7 +1938,7 @@ function Get-AutoRunnerUnsafeAclEntries {
         [Security.AccessControl.FileSystemRights]::DeleteSubdirectoriesAndFiles -bor
         [Security.AccessControl.FileSystemRights]::ChangePermissions -bor
         [Security.AccessControl.FileSystemRights]::TakeOwnership
-    $targets = New-Object System.Collections.Generic.List[string]
+    $targets = [System.Collections.Generic.List[string]]::new()
     $targets.Add($Path)
     if (-not $CurrentOnly -and (Test-Path -LiteralPath $Path -PathType Container)) {
         foreach ($item in @(Get-ChildItem -LiteralPath $Path -Force -Recurse -ErrorAction Stop)) { $targets.Add($item.FullName) }
@@ -1911,7 +1960,7 @@ function Protect-AutoRunnerDirectory {
     [CmdletBinding()]
     param([Parameter(Mandatory = $true)][string]$Path)
     if (-not (Test-AutoRunnerSupportPath -Path $Path)) { throw "Caminho de suporte inseguro: $Path" }
-    # 3.0.0-RC: requisito explícito de produto. A mesma política FullControl aplicada
+    # 3.0.1: requisito explícito de produto. A mesma política FullControl aplicada
     # ao diretório do aplicativo também se aplica a ProgramData e seus recursos.
     return Set-AutoRunnerProductFullControlAcl -Path $Path
 }
@@ -1927,7 +1976,7 @@ function Get-AutoRunnerInstalledState {
     $statePath = Join-Path $SupportDir 'state.json'
     $config = $null
     $state = $null
-    $errors = New-Object System.Collections.Generic.List[string]
+    $errors = [System.Collections.Generic.List[string]]::new()
     try { $config = Read-AutoRunnerJson -Path $configPath -AllowMissing } catch { $errors.Add('Configuração: ' + $_.Exception.Message) }
     try { if(Test-Path -LiteralPath $statePath -PathType Leaf){$state = Read-AutoRunnerState -Path $statePath} } catch { $errors.Add('Estado: ' + $_.Exception.Message) }
     $task = $null
@@ -2114,7 +2163,7 @@ function Test-AutoRunnerInstallation {
         [string]$TaskName = $script:DefaultTaskName,
         [string]$TaskPath = $script:DefaultTaskPath
     )
-    $checks = New-Object System.Collections.Generic.List[object]
+    $checks = [System.Collections.Generic.List[object]]::new()
     function Add-Check([string]$Name, [bool]$Ok, [string]$Detail) {
         $checks.Add([pscustomobject]@{ Name = $Name; Ok = $Ok; Detail = $Detail })
     }
@@ -2192,7 +2241,7 @@ function Test-AutoRunnerInstallation {
         Add-Check 'Jobs configurados' (@($config.Jobs).Count -gt 0) (('{0} job(s)' -f @($config.Jobs).Count))
         $duplicates = @($config.Jobs | Group-Object { ([string]$_.Name).Trim().ToLowerInvariant() } | Where-Object Count -gt 1)
         Add-Check 'Jobs sem duplicidade' ($duplicates.Count -eq 0) (($duplicates.Name) -join ', ')
-        $unconfirmed=New-Object System.Collections.Generic.List[string]
+        $unconfirmed=[System.Collections.Generic.List[string]]::new()
         foreach($job in @($config.Jobs)){
             try{if(-not(ConvertTo-AutoRunnerBoolean -Value (Get-AutoRunnerPropertyValue -InputObject $job -Name 'ConfirmedByTechnician') -Default $false -Name 'ConfirmedByTechnician')){$unconfirmed.Add([string]$job.Name)}}catch{$unconfirmed.Add(([string]$job.Name)+': '+$_.Exception.Message)}
         }
@@ -2219,11 +2268,11 @@ function Test-AutoRunnerInstallation {
 
     try {
         $policy=Test-AutoRunnerProductFullControlAcl -Path $SupportDir
-        Add-Check 'ACL FullControl 3.0.0-RC no diretório operacional' $policy.IsCompliant ($policy.Issues -join '; ')
-    } catch { Add-Check 'ACL FullControl 3.0.0-RC no diretório operacional' $false $_.Exception.Message }
+        Add-Check 'ACL FullControl 3.0.1 no diretório operacional' $policy.IsCompliant ($policy.Issues -join '; ')
+    } catch { Add-Check 'ACL FullControl 3.0.1 no diretório operacional' $false $_.Exception.Message }
 
     try {
-        $resourceIssues = New-Object System.Collections.Generic.List[string]
+        $resourceIssues = [System.Collections.Generic.List[string]]::new()
         foreach ($relative in @('config.json','state.json','manifest.json','logs','state')) {
             $resourcePath = Join-Path $SupportDir $relative
             if (-not (Test-Path -LiteralPath $resourcePath)) { continue }
@@ -2415,7 +2464,7 @@ function Export-AutoRunnerDiagnostics {
     $work = Join-Path $env:TEMP ('SQLBackupAndFTPAuto-Diagnostico-' + [Guid]::NewGuid().ToString('N'))
     New-Item -ItemType Directory -Path $work -Force | Out-Null
     try {
-        $report = New-Object System.Collections.Generic.List[string]
+        $report = [System.Collections.Generic.List[string]]::new()
         $report.Add('SQLBackupAndFTP AutoRunner - Diagnostico')
         $report.Add('Gerado em: ' + (Get-Date).ToString('s'))
         $report.Add('Versao AutoRunner: ' + $script:AutoRunnerVersion)

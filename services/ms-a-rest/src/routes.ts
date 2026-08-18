@@ -19,9 +19,9 @@ function idempotency(request){return String(request.headers['idempotency-key']||
 function accepted(reply,row,existing=false){return reply.code(existing?200:202).send({...commandView(row),idempotentReplay:existing});}
 
 export async function registerRoutes(app) {
-  app.get('/health/live',{config:{public:true}},async()=>({status:'ok',service:'ms-a-rest',version:'3.0.0-RC'}));
+  app.get('/health/live',{config:{public:true}},async()=>({status:'ok',service:'ms-a-rest',version:'3.0.1'}));
   app.get('/health/ready',{config:{public:true}},async(_req,reply)=>{try{await pool.query('select 1');return {status:'ready'};}catch(e){return reply.code(503).send({status:'not_ready',reason:e.message});}});
-  app.get('/api/v1/version',{config:{public:true}},async()=>({product:'SQLBackupAndFTP AutoRunner Control Plane',version:'3.0.0-RC',apiVersion:'v1'}));
+  app.get('/api/v1/version',{config:{public:true}},async()=>({product:'SQLBackupAndFTP AutoRunner Control Plane',version:'3.0.1',apiVersion:'v1'}));
 
   app.post('/api/v1/agent/enroll',{config:{public:true,rateLimit:{max:20,timeWindow:'1 minute'}},schema:{body:{type:'object',required:['token','installId','machine'],properties:{token:{type:'string',minLength:20},installId:{type:'string',minLength:8,maxLength:200},agentVersion:{type:'string',maxLength:50},channel:{type:'string',maxLength:20},protocolVersion:{type:'integer'},machine:{type:'object'},capabilities:{type:'object'}}}}},async(req,reply)=>{
     const result=await enrollAgent({...req.body,sourceIp:req.ip});

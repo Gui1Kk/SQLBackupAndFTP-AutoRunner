@@ -101,7 +101,7 @@ validation_tokens = {
     "IgnoreNew": "Política de instância única",
     "registro": "Entrada em Aplicativos instalados",
     "atalho": "Atalho do Menu Iniciar",
-    "ACL": "ACL FullControl 3.0.0-RC no diretório operacional" if MAJOR_VERSION >= 3 else "ACL sem escrita para identidades amplas",
+    "ACL": "ACL FullControl 3.0.1 no diretório operacional" if MAJOR_VERSION >= 3 else "ACL sem escrita para identidades amplas",
     "estrutura da configuração": "Validação estrutural da configuração",
     "hash do módulo": "Hash do módulo principal",
     "segurança da CLI": "Diretório da CLI protegido",
@@ -145,7 +145,7 @@ check("CLI e SQLite exigem diretório protegido", runner.count("Test-AutoRunnerE
 check("Pacote externo exige checksum completo", "SHA256SUMS.txt ausente. Use um pacote oficial íntegro" in installer and "Arquivo não declarado no checksum" in core, "fail closed fora de DevelopmentMode")
 check("Fonte instalada usa manifesto para reparo", "Fonte instalada validada pelo manifesto" in installer, "reparo sem checksum externo")
 check("Reparse point é verificado recursivamente antes da remoção", uninstaller.count("Test-AutoRunnerTreeHasReparsePoint") >= 2, "início e imediatamente antes de apagar")
-check("GUI confirma jobs não agendados/manuais", "$row.Cells['Scheduled'].Value -ne 'Sim'" in manager and "$row.Cells['Source'].Value -eq 'Manual'" in manager, "confirmação técnica explícita")
+check("GUI confirma jobs não agendados/manuais", "needsTechnicalConfirmation" in manager and "$row.Cells['Scheduled'].Value -ne 'Sim'" in manager and "$row.Cells['Source'].Value -eq 'Manual'" in manager and "Confirmar jobs selecionados" in manager, "uma confirmação agregada, sem expor knobs técnicos")
 check("Instalação incompleta pode ser reparada", "$btnRepair.Enabled=$s.Installed.HasConfiguration" in manager and "reparo disponível" in manager, "recuperação operacional")
 check("Validação está exposta em GUI, console e ação", manager.count("Invoke-ValidateCore") >= 3 and "'Validate'" in manager, "autodiagnóstico")
 

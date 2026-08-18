@@ -47,7 +47,7 @@ function Save-InstallFailureEvidence {
         New-Item -ItemType Directory -Path $failureRoot -Force | Out-Null
         $stamp = Get-Date -Format 'yyyyMMdd_HHmmss'
         $failurePath = Join-Path $failureRoot ("InstallFailure_${stamp}.log")
-        $lines = New-Object System.Collections.Generic.List[string]
+        $lines = [System.Collections.Generic.List[string]]::new()
         $lines.Add('SQLBackupAndFTP AutoRunner - falha de instalação/reparo')
         $lines.Add('Data: ' + (Get-Date).ToString('s'))
         $lines.Add('Modo: ' + $Mode)
@@ -246,7 +246,7 @@ try {
         $selectedJobs = @($request.Jobs)
         if ($selectedJobs.Count -eq 0) { throw 'Selecione ao menos um job.' }
 
-        $normalizedJobs = New-Object System.Collections.Generic.List[object]
+        $normalizedJobs = [System.Collections.Generic.List[object]]::new()
         $seenJobNames = @{}
         foreach ($job in $selectedJobs) {
             $name = ([string]$job.Name).Trim()
