@@ -1,8 +1,12 @@
 # Histórico de versões
 
-## 3.0.0-RC — em preparação
+## 3.0.1 — Stable
 
-Salto arquitetural planejado: AutoRunner como agente de borda, plano central em três microserviços (REST/OpenAPI/Better Auth, GraphQL/Webhooks e WebSocket), inventário remoto, execução de jobs existentes, auditoria e integrações. A política local da 3.0.0-RC exigirá Controle Total para todas as identidades definidas no ADR-003, inclusive Everyone/Todos, pacotes de aplicativos e proprietário. Nesta etapa a implementação da API ainda não foi iniciada.
+Primeira Stable da linha 3.x após homologação da 3.0.0-RC. Mantém o Control Plane, agente outbound e política FullControl da linha 3, corrigindo aplicação/validação de ACL, binder de `List<T>` no PowerShell, descoberta SQLite, layout responsivo e simplificação da configuração local.
+
+## 3.0.0-RC
+
+Release Candidate que introduziu o Control Plane com REST/OpenAPI/Better Auth, GraphQL/Webhooks, WebSocket, PostgreSQL, dashboard e Remote Agent. A homologação Windows encontrou defeitos de ACL, layout e salvamento de jobs que foram corrigidos na 3.0.1.
 
 ## 2.3.5 RC
 

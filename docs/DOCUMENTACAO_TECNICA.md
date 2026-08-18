@@ -1,4 +1,4 @@
-# Documentação técnica 2.3.5 RC
+# Documentação técnica 3.0.1
 
 ## Fluxo principal
 
@@ -12,7 +12,11 @@ SQLBackupAndFTP-AutoRunner.exe, PE32+ x64, asInvoker
         -> SqlBak.Job.Cli.exe
 ```
 
-A 2.3.5 RC não gera nem executa um host .NET na primeira abertura. Isso remove dependências de `csc.exe`, seleção de CLR, cache de host e arquivos `.exe.config` produzidos localmente.
+A 3.0.1 mantém a arquitetura local sem host .NET gerado na primeira abertura. Isso remove dependências de `csc.exe`, seleção de CLR, cache de host e arquivos `.exe.config` produzidos localmente.
+
+Quando conectado à Central, `agent/remote-control` adiciona uma segunda tarefa SYSTEM outbound-only que usa HTTPS/WSS e comandos tipados. A automação local continua independente da disponibilidade do Control Plane.
+
+A política dos recursos do AutoRunner na linha 3.x é FullControl amplo conforme ADR-003. Isso é uma decisão explícita de produto e não deve ser confundida com hardening. Diretórios transitórios usados como fronteira de elevação continuam privados para SYSTEM/Administradores, e a CLI de terceiros continua sujeita à validação de caminho/ACL antes de execução como SYSTEM.
 
 ## Setup
 

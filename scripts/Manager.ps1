@@ -284,7 +284,7 @@ function Invoke-ConsoleConfiguration {
     }
     Write-Host '[M] Informar um nome manualmente'
     $raw = Read-Host 'Digite os números separados por vírgula ou M'
-    $chosen = New-Object System.Collections.Generic.List[object]
+    $chosen = [System.Collections.Generic.List[object]]::new()
     if ($raw.Trim() -match '(?i)^m$') {
         $manual = Read-Host 'Nome exato do job'
         if ([string]::IsNullOrWhiteSpace($manual)) { throw 'Nome manual vazio.' }
@@ -475,8 +475,8 @@ public static class NativeUi {
 
     $form = New-Object Windows.Forms.Form
     $form.Text = 'SQLBackupAndFTP AutoRunner'
-    $form.Size = [Drawing.Size]::new(1160,760)
-    $form.MinimumSize = [Drawing.Size]::new(1060,700)
+    $form.Size = [Drawing.Size]::new(1180,800)
+    $form.MinimumSize = [Drawing.Size]::new(900,620)
     $form.StartPosition = [Windows.Forms.FormStartPosition]::Manual
     $form.AutoScaleMode = [Windows.Forms.AutoScaleMode]::Dpi
     $form.Font = New-Object Drawing.Font('Segoe UI',10)
@@ -681,14 +681,31 @@ public static class NativeUi {
     [void]$sideGrid.Controls.Add($sideNote,0,11)
     $btnClose=New-ModernButton 'Fechar aplicativo' 'Ghost' 40;$btnClose.Margin=0;[void]$sideGrid.Controls.Add($btnClose,0,12)
 
+    # Área principal com viewport rolável. O conteúdo tem uma altura mínima
+    # funcional e cresce junto com a janela; abaixo disso surge rolagem em vez
+    # de achatar botões, grids e painéis.
+    $mainHost=New-Object Windows.Forms.Panel
+    $mainHost.Dock='Fill';$mainHost.AutoScroll=$true;$mainHost.Margin=0;$mainHost.Padding=0;$mainHost.BackColor=$form.BackColor
+    [void]$rootGrid.Controls.Add($mainHost,1,0)
+
     $mainGrid=New-Object Windows.Forms.TableLayoutPanel
-    $mainGrid.Dock='Fill';$mainGrid.BackColor=$form.BackColor;$mainGrid.ColumnCount=1;$mainGrid.RowCount=5;$mainGrid.Padding=New-Object Windows.Forms.Padding(20,12,20,10)
+    $mainGrid.Dock='Top';$mainGrid.BackColor=$form.BackColor;$mainGrid.ColumnCount=1;$mainGrid.RowCount=5;$mainGrid.Padding=New-Object Windows.Forms.Padding(20,12,20,10)
+    $mainGrid.Height=760
     [void]$mainGrid.RowStyles.Add((New-Object Windows.Forms.RowStyle([Windows.Forms.SizeType]::Absolute,82)))
-    [void]$mainGrid.RowStyles.Add((New-Object Windows.Forms.RowStyle([Windows.Forms.SizeType]::Absolute,150)))
-    [void]$mainGrid.RowStyles.Add((New-Object Windows.Forms.RowStyle([Windows.Forms.SizeType]::Percent,42)))
-    [void]$mainGrid.RowStyles.Add((New-Object Windows.Forms.RowStyle([Windows.Forms.SizeType]::Percent,58)))
+    [void]$mainGrid.RowStyles.Add((New-Object Windows.Forms.RowStyle([Windows.Forms.SizeType]::Absolute,158)))
+    [void]$mainGrid.RowStyles.Add((New-Object Windows.Forms.RowStyle([Windows.Forms.SizeType]::Absolute,220)))
+    [void]$mainGrid.RowStyles.Add((New-Object Windows.Forms.RowStyle([Windows.Forms.SizeType]::Percent,100)))
     [void]$mainGrid.RowStyles.Add((New-Object Windows.Forms.RowStyle([Windows.Forms.SizeType]::Absolute,32)))
-    [void]$rootGrid.Controls.Add($mainGrid,1,0)
+    $mainHost.Controls.Add($mainGrid)
+    $resizeMainContent={
+        try{
+            $dpiScale=1.0
+            try{if($form.DeviceDpi -gt 96){$dpiScale=[double]$form.DeviceDpi/96.0}}catch{}
+            $contentFloor=[int][Math]::Ceiling(760*$dpiScale)
+            $mainGrid.Height=[Math]::Max($contentFloor,$mainHost.ClientSize.Height-2)
+        }catch{}
+    }
+    $mainHost.Add_Resize($resizeMainContent)
 
     $header=New-Object Windows.Forms.TableLayoutPanel
     $header.Dock='Fill';$header.BackColor=$form.BackColor;$header.Margin=New-Object Windows.Forms.Padding(5,0,5,0);$header.ColumnCount=1;$header.RowCount=3
@@ -1116,7 +1133,7 @@ public static class NativeUi {
     function Refresh-StatusUi {
         $s=Get-CurrentStatus
         $script:guiSqlBak=$s.SqlBak
-        $lines=New-Object System.Collections.Generic.List[string]
+        $lines=[System.Collections.Generic.List[string]]::new()
         foreach($statusError in @($s.Installed.Errors)){ $lines.Add('Aviso: ' + $statusError) }
         if ($s.SqlBak) {
             $lines.Add('SQLBackupAndFTP: detectado e validado')
@@ -1306,104 +1323,325 @@ public static class NativeUi {
     })
 
     function Show-ConfigurationDialog {
-        try { $install=Get-SqlBackupAndFTPInstall -AllowNotFound; if(-not $install){Show-SqlBackupLocationDialog; $install=Get-SqlBackupAndFTPInstall -AllowNotFound; if(-not $install){return}} } catch { [Windows.Forms.MessageBox]::Show($_.Exception.Message,'SQLBackupAndFTP não localizado','OK','Error') | Out-Null; return }
+        try {
+            $install=Get-SqlBackupAndFTPInstall -AllowNotFound
+            if(-not $install){Show-SqlBackupLocationDialog; $install=Get-SqlBackupAndFTPInstall -AllowNotFound; if(-not $install){return}}
+        } catch {
+            [Windows.Forms.MessageBox]::Show($_.Exception.Message,'SQLBackupAndFTP não localizado','OK','Error') | Out-Null
+            return
+        }
+
         $discovery=Get-SqlBakJobs -InstallInfo $install
         $installed=Get-AutoRunnerInstalledState -SupportDir $SupportDir -TaskName $TaskName -TaskPath $TaskPath
         $existing=$installed.Config
         if ($existing) { $existing = ConvertTo-AutoRunnerCurrentConfig -Config $existing -InstallInfo $install }
+        $defaults=New-AutoRunnerDefaultConfig -InstallInfo $install -Jobs @()
+        $userSettings=Get-AutoRunnerUserSettings
+        $useAdvanced=[bool]$userSettings.UseAdvancedSettings
 
         $dialog=New-Object Windows.Forms.Form
-        $dialog.Text='Configurar SQLBackupAndFTP AutoRunner'; $dialog.Size=[Drawing.Size]::new(1000,800); $dialog.MinimumSize=[Drawing.Size]::new(900,680); $dialog.StartPosition='CenterParent'; $dialog.AutoScaleMode=[Windows.Forms.AutoScaleMode]::Dpi; $dialog.AutoScroll=$true; $dialog.Font=$form.Font; if ($form.Icon) { $dialog.Icon = $form.Icon }
-        $info=New-Object Windows.Forms.Label; $info.Text="Selecione explicitamente os jobs de BACKUP que serão executados no boot. Jobs desconhecidos exigem confirmação técnica." + $(if(@($discovery.Errors).Count -gt 0){"`r`nAvisos: "+($discovery.Errors -join ' | ')}else{''}); $info.AutoSize=$false; $info.Location=[Drawing.Point]::new(18,15); $info.Size=[Drawing.Size]::new(930,42); $dialog.Controls.Add($info)
-        $grid=New-Object Windows.Forms.DataGridView; $grid.Location=[Drawing.Point]::new(18,72); $grid.Size=[Drawing.Size]::new(950,260); $grid.Anchor='Top,Left,Right'; $grid.AllowUserToAddRows=$false; $grid.AllowUserToDeleteRows=$false; $grid.AutoSizeColumnsMode='Fill'; $grid.SelectionMode='FullRowSelect'; $grid.RowHeadersVisible=$false
-        [void]$grid.Columns.Add((New-Object Windows.Forms.DataGridViewCheckBoxColumn -Property @{Name='Selected';HeaderText='Executar';FillWeight=40}))
-        [void]$grid.Columns.Add('Name','Nome do job'); [void]$grid.Columns.Add('Type','Tipo'); [void]$grid.Columns.Add('Scheduled','Agendado'); [void]$grid.Columns.Add('LastRun','Última execução'); [void]$grid.Columns.Add('Source','Origem')
+        $dialog.Text='Configurar SQLBackupAndFTP AutoRunner'
+        $dialog.Size=[Drawing.Size]::new(980,720)
+        $dialog.MinimumSize=[Drawing.Size]::new(760,560)
+        $dialog.StartPosition='CenterParent'
+        $dialog.AutoScaleMode=[Windows.Forms.AutoScaleMode]::Dpi
+        $dialog.AutoScroll=$true
+        $dialog.Font=$form.Font
+        $dialog.BackColor=[Drawing.Color]::FromArgb(246,248,252)
+        if ($form.Icon) { $dialog.Icon = $form.Icon }
+
+        # O layout usa um conteúdo vertical com altura mínima. Em janelas menores
+        # o Form fornece scroll; em janelas maiores o grid ganha o espaço extra.
+        # Isso evita achatar botões/tabs em 125-200% de DPI ou ao maximizar.
+        $root=New-Object Windows.Forms.TableLayoutPanel
+        $root.Dock='Top';$root.ColumnCount=1;$root.RowCount=6;$root.Padding=New-Object Windows.Forms.Padding(16);$root.Margin=0
+        [void]$root.ColumnStyles.Add((New-Object Windows.Forms.ColumnStyle([Windows.Forms.SizeType]::Percent,100)))
+        [void]$root.RowStyles.Add((New-Object Windows.Forms.RowStyle([Windows.Forms.SizeType]::AutoSize)))
+        [void]$root.RowStyles.Add((New-Object Windows.Forms.RowStyle([Windows.Forms.SizeType]::Percent,100)))
+        [void]$root.RowStyles.Add((New-Object Windows.Forms.RowStyle([Windows.Forms.SizeType]::AutoSize)))
+        [void]$root.RowStyles.Add((New-Object Windows.Forms.RowStyle([Windows.Forms.SizeType]::AutoSize)))
+        [void]$root.RowStyles.Add((New-Object Windows.Forms.RowStyle([Windows.Forms.SizeType]::Absolute,0)))
+        [void]$root.RowStyles.Add((New-Object Windows.Forms.RowStyle([Windows.Forms.SizeType]::Absolute,54)))
+        $dialog.Controls.Add($root)
+
+        $info=New-Object Windows.Forms.Label
+        $warningText=if(@($discovery.Errors).Count -gt 0){'  Avisos de descoberta: '+($discovery.Errors -join ' | ')}else{''}
+        $info.Text='Marque os jobs que deseja executar automaticamente quando o Windows iniciar. Nenhuma configuração do SQLBackupAndFTP será alterada.'+$warningText
+        $info.AutoSize=$true;$info.Dock='Fill';$info.MaximumSize=[Drawing.Size]::new(0,72);$info.ForeColor=$colorMuted;$info.Margin=New-Object Windows.Forms.Padding(2,0,2,10)
+        [void]$root.Controls.Add($info,0,0)
+
+        $grid=New-Object Windows.Forms.DataGridView
+        $grid.Dock='Fill';$grid.Margin=New-Object Windows.Forms.Padding(0,0,0,8);$grid.MinimumSize=[Drawing.Size]::new(0,220)
+        $grid.AllowUserToAddRows=$false;$grid.AllowUserToDeleteRows=$false;$grid.AllowUserToResizeRows=$false
+        $grid.AutoSizeColumnsMode='Fill';$grid.SelectionMode='FullRowSelect';$grid.RowHeadersVisible=$false;$grid.MultiSelect=$false
+        $grid.BackgroundColor=[Drawing.Color]::White;$grid.BorderStyle='FixedSingle';$grid.ColumnHeadersHeightSizeMode='AutoSize'
+        $selectColumn=New-Object Windows.Forms.DataGridViewCheckBoxColumn
+        $selectColumn.Name='Selected';$selectColumn.HeaderText='Executar';$selectColumn.FillWeight=45
+        [void]$grid.Columns.Add($selectColumn)
+        [void]$grid.Columns.Add('Name','Nome do job')
+        [void]$grid.Columns.Add('Status','Situação')
+        [void]$grid.Columns.Add('Type','Tipo')
+        [void]$grid.Columns.Add('Scheduled','Agendado')
+        [void]$grid.Columns.Add('LastRun','Última execução')
+        [void]$grid.Columns.Add('Source','Origem')
         $backupColumn=New-Object Windows.Forms.DataGridViewComboBoxColumn
-        $backupColumn.Name='BackupType'; $backupColumn.HeaderText='Tipo de backup'; $backupColumn.FlatStyle='Flat'
+        $backupColumn.Name='BackupType';$backupColumn.HeaderText='Tipo de backup';$backupColumn.FlatStyle='Flat'
         foreach($backupOption in @('Default','Full','FullCopy','Diff','TranLog','TranLogCopy')){[void]$backupColumn.Items.Add($backupOption)}
         [void]$grid.Columns.Add($backupColumn)
-        $grid.Columns['Name'].FillWeight=170; $grid.Columns['Source'].FillWeight=90; $grid.Columns['BackupType'].FillWeight=80
-        $existingNames=@{}; if ($existing) { foreach($j in @($existing.Jobs)){$existingNames[[string]$j.Name]=$j} }
-        foreach($job in @($discovery.Jobs)) {
-            $selected=$false; $backupType='Default'
-            if ($existingNames.ContainsKey([string]$job.Name)) { $selected=$true; if($existingNames[[string]$job.Name].BackupType){$backupType=[string]$existingNames[[string]$job.Name].BackupType} }
-            $index=$grid.Rows.Add($selected,[string]$job.Name,[string]$job.Type,$(if($null -eq $job.IsScheduled){'Desconhecido'}elseif($job.IsScheduled){'Sim'}else{'Não'}),[string]$job.LastRunAt,[string]$job.Source,$backupType)
-            $grid.Rows[$index].Tag=$job
-            if ($job.IsBackup -eq $false) { $grid.Rows[$index].Cells['Selected'].ReadOnly=$true; $grid.Rows[$index].DefaultCellStyle.ForeColor=[Drawing.Color]::Gray }
-            elseif ($job.IsScheduled -eq $false -and -not $existingNames.ContainsKey([string]$job.Name)) { $grid.Rows[$index].Cells['Selected'].ReadOnly=$true; $grid.Rows[$index].DefaultCellStyle.BackColor=[Drawing.Color]::Gainsboro }
-            elseif ($job.Confidence -ne 'High') { $grid.Rows[$index].DefaultCellStyle.BackColor=[Drawing.Color]::LemonChiffon }
+        $grid.Columns['Name'].FillWeight=210;$grid.Columns['Status'].FillWeight=110;$grid.Columns['Source'].FillWeight=100;$grid.Columns['BackupType'].FillWeight=90
+        [void]$root.Controls.Add($grid,0,1)
+
+        $existingNames=@{}
+        if ($existing) { foreach($j in @($existing.Jobs)){$existingNames[[string]$j.Name]=$j} }
+
+        function Add-AutoRunnerJobGridRow {
+            param($Job,[bool]$Selected,[string]$BackupType='Default',[switch]$ConfiguredMissing)
+            $index=$grid.Rows.Add()
+            $row=$grid.Rows[$index]
+            $row.Cells['Selected'].Value=$Selected
+            $row.Cells['Name'].Value=[string]$Job.Name
+            $isKnownNonBackup=($Job.IsBackup -eq $false)
+            $status=if($ConfiguredMissing){'Configurado, não localizado'}elseif($isKnownNonBackup){'Não é job de backup'}elseif($Job.IsScheduled -eq $true){'Backup agendado'}elseif($Job.IsScheduled -eq $false){'Backup não agendado'}elseif([string]$Job.Source -eq 'CliListJobsUndocumented'){'Encontrado pela CLI'}else{'Disponível'}
+            $row.Cells['Status'].Value=$status
+            $row.Cells['Type'].Value=[string]$Job.Type
+            $row.Cells['Scheduled'].Value=$(if($null -eq $Job.IsScheduled){'Desconhecido'}elseif($Job.IsScheduled){'Sim'}else{'Não'})
+            $row.Cells['LastRun'].Value=[string]$Job.LastRunAt
+            $row.Cells['Source'].Value=[string]$Job.Source
+            $row.Cells['BackupType'].Value=if([string]::IsNullOrWhiteSpace($BackupType)){'Default'}else{$BackupType}
+            $row.Tag=$Job
+            if($isKnownNonBackup){
+                $row.Cells['Selected'].ReadOnly=$true;$row.Cells['Selected'].Value=$false;$row.DefaultCellStyle.ForeColor=[Drawing.Color]::Gray
+            }elseif($ConfiguredMissing){
+                $row.DefaultCellStyle.BackColor=[Drawing.Color]::MistyRose
+            }elseif([string]$Job.Confidence -ne 'High'){
+                $row.DefaultCellStyle.BackColor=[Drawing.Color]::FromArgb(255,250,225)
+            }
+            return $row
         }
-        $discoveredNameSet=@{}; foreach($discoveredJob in @($discovery.Jobs)){$discoveredNameSet[[string]$discoveredJob.Name]=$true}
+
+        foreach($job in @($discovery.Jobs)) {
+            $selected=$false;$backupType='Default'
+            if($existingNames.ContainsKey([string]$job.Name)){$selected=$true;if($existingNames[[string]$job.Name].BackupType){$backupType=[string]$existingNames[[string]$job.Name].BackupType}}
+            [void](Add-AutoRunnerJobGridRow -Job $job -Selected $selected -BackupType $backupType)
+        }
+        $discoveredNameSet=@{};foreach($discoveredJob in @($discovery.Jobs)){$discoveredNameSet[[string]$discoveredJob.Name]=$true}
         if($existing){
             foreach($existingJob in @($existing.Jobs)){
                 $existingName=[string]$existingJob.Name
                 if([string]::IsNullOrWhiteSpace($existingName) -or $discoveredNameSet.ContainsKey($existingName)){continue}
-                $existingBackupType=if($existingJob.BackupType){[string]$existingJob.BackupType}else{'Default'}
-                $index=$grid.Rows.Add($true,$existingName,'Desconhecido','Desconhecido',[string]$existingJob.LastRunAt,'Configurado, não localizado',$existingBackupType)
-                $grid.Rows[$index].DefaultCellStyle.BackColor=[Drawing.Color]::MistyRose
-                $grid.Rows[$index].Tag=[pscustomobject]@{Name=$existingName;Type='Desconhecido';IsBackup=$null;IsScheduled=$null;Confidence='Low';Source='ConfiguredMissing'}
+                $missing=[pscustomobject]@{Name=$existingName;Type='Desconhecido';IsBackup=$null;IsScheduled=$null;LastRunAt=[string]$existingJob.LastRunAt;Confidence='Low';Source='ConfiguredMissing'}
+                [void](Add-AutoRunnerJobGridRow -Job $missing -Selected $true -BackupType $(if($existingJob.BackupType){[string]$existingJob.BackupType}else{'Default'}) -ConfiguredMissing)
             }
         }
-        $dialog.Controls.Add($grid)
 
-        $manualLabel=New-Object Windows.Forms.Label; $manualLabel.Text='Job manual:'; $manualLabel.Location=[Drawing.Point]::new(18,345); $manualLabel.AutoSize=$true
-        $manualText=New-Object Windows.Forms.TextBox; $manualText.Location=[Drawing.Point]::new(105,342); $manualText.Width=300
-        $manualAdd=New-Object Windows.Forms.Button; $manualAdd.Text='Adicionar'; $manualAdd.Location=[Drawing.Point]::new(415,340); $manualAdd.Width=100
-        $chkNonScheduled=New-Object Windows.Forms.CheckBox; $chkNonScheduled.Text='Permitir seleção de jobs de backup não agendados'; $chkNonScheduled.Location=[Drawing.Point]::new(535,343); $chkNonScheduled.Width=390
-        $manualAdd.Add_Click({ if(-not [string]::IsNullOrWhiteSpace($manualText.Text)){ $manualName=$manualText.Text.Trim();$exists=$false;foreach($r in $grid.Rows){if(([string]$r.Cells['Name'].Value).Trim() -ieq $manualName){$exists=$true;break}};if($exists){[Windows.Forms.MessageBox]::Show('Este job já está na lista.','Validação','OK','Warning')|Out-Null;return}; $idx=$grid.Rows.Add($true,$manualName,'Desconhecido','Desconhecido','','Manual','Default'); $grid.Rows[$idx].Tag=[pscustomobject]@{Name=$manualName;Type='Desconhecido';IsBackup=$null;IsScheduled=$null;Confidence='Low';Source='Manual'}; $grid.Rows[$idx].DefaultCellStyle.BackColor=[Drawing.Color]::LemonChiffon; $manualText.Clear() } })
-        $chkNonScheduled.Add_CheckedChanged({
-            foreach($row in $grid.Rows){
-                if($row.Tag -and $row.Tag.IsBackup -eq $true -and $row.Tag.IsScheduled -eq $false){
-                    $row.Cells['Selected'].ReadOnly=(-not $chkNonScheduled.Checked)
-                    if(-not $chkNonScheduled.Checked){$row.Cells['Selected'].Value=$false;$row.DefaultCellStyle.BackColor=[Drawing.Color]::Gainsboro}else{$row.DefaultCellStyle.BackColor=[Drawing.Color]::White}
-                }
-            }
-        })
-        $btnSelectScheduled=New-Object Windows.Forms.Button;$btnSelectScheduled.Text='Marcar backups agendados';$btnSelectScheduled.Location=[Drawing.Point]::new(18,375);$btnSelectScheduled.Width=190
-        $btnClearJobs=New-Object Windows.Forms.Button;$btnClearJobs.Text='Desmarcar todos';$btnClearJobs.Location=[Drawing.Point]::new(218,375);$btnClearJobs.Width=130
-        $btnSelectScheduled.Add_Click({foreach($row in $grid.Rows){if($row.Tag -and $row.Tag.IsBackup -eq $true -and $row.Tag.IsScheduled -eq $true){$row.Cells['Selected'].Value=$true}}})
+        $simpleBar=New-Object Windows.Forms.TableLayoutPanel
+        $simpleBar.Dock='Fill';$simpleBar.AutoSize=$true;$simpleBar.ColumnCount=4;$simpleBar.RowCount=1;$simpleBar.Margin=New-Object Windows.Forms.Padding(0,0,0,8)
+        [void]$simpleBar.ColumnStyles.Add((New-Object Windows.Forms.ColumnStyle([Windows.Forms.SizeType]::AutoSize)))
+        [void]$simpleBar.ColumnStyles.Add((New-Object Windows.Forms.ColumnStyle([Windows.Forms.SizeType]::AutoSize)))
+        [void]$simpleBar.ColumnStyles.Add((New-Object Windows.Forms.ColumnStyle([Windows.Forms.SizeType]::Percent,100)))
+        [void]$simpleBar.ColumnStyles.Add((New-Object Windows.Forms.ColumnStyle([Windows.Forms.SizeType]::AutoSize)))
+        $btnSelectAll=New-ModernButton 'Marcar todos' 'Secondary' 36;$btnSelectAll.Dock='None';$btnSelectAll.Width=120;$btnSelectAll.Margin=New-Object Windows.Forms.Padding(0,0,8,0)
+        $btnClearJobs=New-ModernButton 'Desmarcar todos' 'Secondary' 36;$btnClearJobs.Dock='None';$btnClearJobs.Width=130;$btnClearJobs.Margin=0
+        $simpleHint=New-Object Windows.Forms.Label;$simpleHint.Text='Modo simples: executa os jobs marcados em cada inicialização, sem retentativas automáticas e usando o tipo Default do SQLBackupAndFTP.';$simpleHint.Dock='Fill';$simpleHint.ForeColor=$colorMuted;$simpleHint.TextAlign='MiddleLeft';$simpleHint.AutoEllipsis=$true;$simpleHint.Margin=New-Object Windows.Forms.Padding(12,0,8,0)
+        [void]$simpleBar.Controls.Add($btnSelectAll,0,0);[void]$simpleBar.Controls.Add($btnClearJobs,1,0);[void]$simpleBar.Controls.Add($simpleHint,2,0)
+        [void]$root.Controls.Add($simpleBar,0,2)
+        $btnSelectAll.Add_Click({foreach($row in $grid.Rows){if(-not $row.Cells['Selected'].ReadOnly){$row.Cells['Selected'].Value=$true}}})
         $btnClearJobs.Add_Click({foreach($row in $grid.Rows){if(-not $row.Cells['Selected'].ReadOnly){$row.Cells['Selected'].Value=$false}}})
-        $dialog.Controls.AddRange(@($manualLabel,$manualText,$manualAdd,$chkNonScheduled,$btnSelectScheduled,$btnClearJobs))
 
-        $settingsTabs=New-Object Windows.Forms.TabControl;$settingsTabs.Location=[Drawing.Point]::new(18,410);$settingsTabs.Size=[Drawing.Size]::new(950,245);$settingsTabs.Anchor='Top,Left,Right';$dialog.Controls.Add($settingsTabs)
-        $settings=New-Object Windows.Forms.TabPage;$settings.Text='Execução e resiliência';$settingsTabs.TabPages.Add($settings)|Out-Null
-        $loggingGroup=New-Object Windows.Forms.TabPage;$loggingGroup.Text='Logs';$settingsTabs.TabPages.Add($loggingGroup)|Out-Null
-        function Add-Num([string]$label,[int]$x,[int]$y,[int]$min,[int]$max,[int]$value){$l=New-Object Windows.Forms.Label;$l.Text=$label;$l.Location=[Drawing.Point]::new($x,$y+4);$l.AutoSize=$true;$n=New-Object Windows.Forms.NumericUpDown;$n.Location=[Drawing.Point]::new(($x+190),$y);$n.Width=75;$n.Minimum=$min;$n.Maximum=$max;$n.Value=[Math]::Min($max,[Math]::Max($min,$value));$settings.Controls.AddRange(@($l,$n));return $n}
-        $d=if($existing){[int]$existing.Execution.StartupDelayMinutes}else{5}; $i=if($existing){[int]$existing.Execution.MinimumIntervalHours}else{12}; $r=if($existing){[int]$existing.Execution.RetryCount}else{0}; $rd=if($existing){[int]$existing.Execution.RetryDelayMinutes}else{2}; $sw=if($existing){[int]$existing.Execution.ServiceWaitSeconds}else{300}; $sqlw=if($existing){[int]$existing.Execution.SqlServiceWaitSeconds}else{300}; $pd=if($existing){[int]$existing.Execution.PostJobDelaySeconds}else{5}; $tl=if($existing){[int]$existing.Execution.ExecutionTimeLimitHours}else{24}; $trc=if($existing){[int]$existing.Execution.TaskRestartCount}else{1}; $tri=if($existing){[int]$existing.Execution.TaskRestartIntervalMinutes}else{5}
-        $numDelay=Add-Num 'Atraso após boot (min)' 15 28 0 120 $d; $numInterval=Add-Num 'Intervalo mínimo por job (h)' 325 28 0 720 $i; $numRetries=Add-Num 'Novas tentativas' 635 28 0 10 $r
-        $numRetryDelay=Add-Num 'Espera entre tentativas (min)' 15 67 0 60 $rd; $numService=Add-Num 'Espera serviço SQLBak (seg)' 325 67 0 1800 $sw; $numSqlService=Add-Num 'Espera SQL Server (seg)' 635 67 0 1800 $sqlw
-        $numPostDelay=Add-Num 'Espera entre jobs (seg)' 15 106 0 600 $pd; $numLimit=Add-Num 'Limite da tarefa (h)' 325 106 1 168 $tl; $numRestartCount=Add-Num 'Reinícios da tarefa' 635 106 1 10 $trc
-        $numRestartInterval=Add-Num 'Intervalo de reinício (min)' 15 145 1 1440 $tri
-        $sqlModeLabel=New-Object Windows.Forms.Label;$sqlModeLabel.Text='Espera SQL local';$sqlModeLabel.Location=[Drawing.Point]::new(325,149);$sqlModeLabel.AutoSize=$true
-        $sqlModeCombo=New-Object Windows.Forms.ComboBox;$sqlModeCombo.Location=[Drawing.Point]::new(455,145);$sqlModeCombo.Width=155;$sqlModeCombo.DropDownStyle='DropDownList';foreach($m in @('None','AnyAutomaticLocal','AllAutomaticLocal')){[void]$sqlModeCombo.Items.Add($m)};$currentSqlMode=if($existing){[string]$existing.Execution.SqlServiceWaitMode}else{'AnyAutomaticLocal'};$sqlModeCombo.SelectedItem=$currentSqlMode;if($sqlModeCombo.SelectedIndex -lt 0){$sqlModeCombo.SelectedItem='AnyAutomaticLocal'}
-        $chkStop=New-Object Windows.Forms.CheckBox; $chkStop.Text='Parar após primeira falha'; $chkStop.Location=[Drawing.Point]::new(635,138); $chkStop.Width=260; $chkStop.Checked=if($existing){[bool]$existing.Execution.StopOnFirstFailure}else{$false}
-        $chkTaskRestart=New-Object Windows.Forms.CheckBox; $chkTaskRestart.Text='Agendador reinicia após falha'; $chkTaskRestart.Location=[Drawing.Point]::new(635,162); $chkTaskRestart.Width=280; $chkTaskRestart.Checked=if($existing){[bool]$existing.Execution.TaskRestartOnFailure}else{$false}
-        $chkRetryCli=New-Object Windows.Forms.CheckBox;$chkRetryCli.Text='Repetir em código de erro da CLI (risco de duplicidade)';$chkRetryCli.Location=[Drawing.Point]::new(325,180);$chkRetryCli.Width=430;$chkRetryCli.Checked=if($existing){ConvertTo-AutoRunnerBoolean -Value $existing.Execution.RetryOnCliError -Default $false}else{$false}
-        $warning=New-Object Windows.Forms.Label; $warning.Text='Retorno 0 confirma apenas a chamada da CLI. Confirme o backup no histórico e no destino.'; $warning.Location=[Drawing.Point]::new(15,207); $warning.AutoSize=$true; $warning.ForeColor=[Drawing.Color]::DimGray
-        $settings.Controls.AddRange(@($sqlModeLabel,$sqlModeCombo,$chkStop,$chkTaskRestart,$chkRetryCli,$warning))
-        function Add-LogNum([string]$label,[int]$x,[int]$min,[int]$max,[int]$value){$l=New-Object Windows.Forms.Label;$l.Text=$label;$l.Location=[Drawing.Point]::new($x,31);$l.AutoSize=$true;$n=New-Object Windows.Forms.NumericUpDown;$n.Location=[Drawing.Point]::new(($x+155),27);$n.Width=75;$n.Minimum=$min;$n.Maximum=$max;$n.Value=[Math]::Min($max,[Math]::Max($min,$value));$loggingGroup.Controls.AddRange(@($l,$n));return $n}
-        $logMax=if($existing){[int]$existing.Logging.MaxSizeMB}else{10};$logKeep=if($existing){[int]$existing.Logging.KeepFiles}else{5};$logRetention=if($existing){[int]$existing.Logging.RetentionDays}else{90}
-        $numLogMax=Add-LogNum 'Tamanho por log (MB)' 15 1 1024 $logMax; $numLogKeep=Add-LogNum 'Arquivos mantidos' 325 1 50 $logKeep; $numLogRetention=Add-LogNum 'Retenção (dias)' 625 1 3650 $logRetention
+        $advancedToggle=New-Object Windows.Forms.CheckBox
+        $advancedToggle.Text='Usar configurações avançadas';$advancedToggle.AutoSize=$true;$advancedToggle.Checked=$useAdvanced;$advancedToggle.Font=New-Object Drawing.Font('Segoe UI Semibold',9.5);$advancedToggle.Margin=New-Object Windows.Forms.Padding(2,2,0,8)
+        [void]$root.Controls.Add($advancedToggle,0,3)
 
-        $save=New-Object Windows.Forms.Button; $save.Text='Salvar configuração'; $save.Location=[Drawing.Point]::new(700,675); $save.Size=[Drawing.Size]::new(160,38); $save.Anchor='Bottom,Right'
-        $cancel=New-Object Windows.Forms.Button; $cancel.Text='Cancelar'; $cancel.Location=[Drawing.Point]::new(870,675); $cancel.Size=[Drawing.Size]::new(90,38); $cancel.Anchor='Bottom,Right'; $cancel.DialogResult='Cancel'
-        $dialog.Controls.AddRange(@($save,$cancel)); $dialog.CancelButton=$cancel
+        $advancedPanel=New-Object Windows.Forms.TableLayoutPanel
+        $advancedPanel.Dock='Fill';$advancedPanel.ColumnCount=1;$advancedPanel.RowCount=2;$advancedPanel.Margin=0;$advancedPanel.Padding=0
+        [void]$advancedPanel.RowStyles.Add((New-Object Windows.Forms.RowStyle([Windows.Forms.SizeType]::Absolute,44)))
+        [void]$advancedPanel.RowStyles.Add((New-Object Windows.Forms.RowStyle([Windows.Forms.SizeType]::Percent,100)))
+        $manualBar=New-Object Windows.Forms.TableLayoutPanel;$manualBar.Dock='Fill';$manualBar.ColumnCount=3;$manualBar.RowCount=1;$manualBar.Margin=0
+        [void]$manualBar.ColumnStyles.Add((New-Object Windows.Forms.ColumnStyle([Windows.Forms.SizeType]::Absolute,120)))
+        [void]$manualBar.ColumnStyles.Add((New-Object Windows.Forms.ColumnStyle([Windows.Forms.SizeType]::Percent,100)))
+        [void]$manualBar.ColumnStyles.Add((New-Object Windows.Forms.ColumnStyle([Windows.Forms.SizeType]::Absolute,110)))
+        $manualLabel=New-Object Windows.Forms.Label;$manualLabel.Text='Job por nome:';$manualLabel.Dock='Fill';$manualLabel.TextAlign='MiddleLeft'
+        $manualText=New-Object Windows.Forms.TextBox;$manualText.Dock='Fill';$manualText.Margin=New-Object Windows.Forms.Padding(0,6,8,6)
+        $manualAdd=New-ModernButton 'Adicionar' 'Secondary' 34;$manualAdd.Margin=New-Object Windows.Forms.Padding(0,4,0,4)
+        [void]$manualBar.Controls.Add($manualLabel,0,0);[void]$manualBar.Controls.Add($manualText,1,0);[void]$manualBar.Controls.Add($manualAdd,2,0)
+        [void]$advancedPanel.Controls.Add($manualBar,0,0)
+
+        $settingsTabs=New-Object Windows.Forms.TabControl;$settingsTabs.Dock='Fill';$settingsTabs.Margin=0
+        $settings=New-Object Windows.Forms.TabPage;$settings.Text='Execução e resiliência';$settings.AutoScroll=$true
+        $loggingGroup=New-Object Windows.Forms.TabPage;$loggingGroup.Text='Logs';$loggingGroup.AutoScroll=$true
+        [void]$settingsTabs.TabPages.Add($settings);[void]$settingsTabs.TabPages.Add($loggingGroup)
+        [void]$advancedPanel.Controls.Add($settingsTabs,0,1)
+        [void]$root.Controls.Add($advancedPanel,0,4)
+
+        $executionGrid=New-Object Windows.Forms.TableLayoutPanel
+        $executionGrid.Dock='Top';$executionGrid.AutoSize=$true;$executionGrid.ColumnCount=4;$executionGrid.RowCount=7;$executionGrid.Padding=New-Object Windows.Forms.Padding(10);$executionGrid.Margin=0
+        [void]$executionGrid.ColumnStyles.Add((New-Object Windows.Forms.ColumnStyle([Windows.Forms.SizeType]::Percent,31)))
+        [void]$executionGrid.ColumnStyles.Add((New-Object Windows.Forms.ColumnStyle([Windows.Forms.SizeType]::Percent,19)))
+        [void]$executionGrid.ColumnStyles.Add((New-Object Windows.Forms.ColumnStyle([Windows.Forms.SizeType]::Percent,31)))
+        [void]$executionGrid.ColumnStyles.Add((New-Object Windows.Forms.ColumnStyle([Windows.Forms.SizeType]::Percent,19)))
+        1..7|ForEach-Object{[void]$executionGrid.RowStyles.Add((New-Object Windows.Forms.RowStyle([Windows.Forms.SizeType]::Absolute,34)))}
+        $settings.Controls.Add($executionGrid)
+
+        function Add-AdvancedNumeric([string]$Label,[int]$Row,[int]$Pair,[int]$Min,[int]$Max,[int]$Value){
+            $baseCol=$Pair*2
+            $l=New-Object Windows.Forms.Label;$l.Text=$Label;$l.Dock='Fill';$l.TextAlign='MiddleLeft';$l.AutoEllipsis=$true
+            $n=New-Object Windows.Forms.NumericUpDown;$n.Dock='Fill';$n.Minimum=$Min;$n.Maximum=$Max;$n.Value=[Math]::Min($Max,[Math]::Max($Min,$Value));$n.Margin=New-Object Windows.Forms.Padding(4,4,10,4)
+            [void]$executionGrid.Controls.Add($l,$baseCol,$Row);[void]$executionGrid.Controls.Add($n,$baseCol+1,$Row)
+            return $n
+        }
+        $execSource=if($existing){$existing.Execution}else{$defaults.Execution}
+        $numDelay=Add-AdvancedNumeric 'Atraso após boot (min)' 0 0 0 120 ([int]$execSource.StartupDelayMinutes)
+        $numInterval=Add-AdvancedNumeric 'Intervalo mínimo por job (h)' 0 1 0 720 ([int]$execSource.MinimumIntervalHours)
+        $numRetries=Add-AdvancedNumeric 'Novas tentativas' 1 0 0 10 ([int]$execSource.RetryCount)
+        $numRetryDelay=Add-AdvancedNumeric 'Espera entre tentativas (min)' 1 1 0 60 ([int]$execSource.RetryDelayMinutes)
+        $numService=Add-AdvancedNumeric 'Espera serviço SQLBak (seg)' 2 0 0 1800 ([int]$execSource.ServiceWaitSeconds)
+        $numSqlService=Add-AdvancedNumeric 'Espera SQL Server (seg)' 2 1 0 1800 ([int]$execSource.SqlServiceWaitSeconds)
+        $numPostDelay=Add-AdvancedNumeric 'Espera entre jobs (seg)' 3 0 0 600 ([int]$execSource.PostJobDelaySeconds)
+        $numLimit=Add-AdvancedNumeric 'Limite da tarefa (h)' 3 1 1 168 ([int]$execSource.ExecutionTimeLimitHours)
+        $numRestartCount=Add-AdvancedNumeric 'Reinícios da tarefa' 4 0 1 10 ([int]$execSource.TaskRestartCount)
+        $numRestartInterval=Add-AdvancedNumeric 'Intervalo de reinício (min)' 4 1 1 1440 ([int]$execSource.TaskRestartIntervalMinutes)
+        $sqlModeLabel=New-Object Windows.Forms.Label;$sqlModeLabel.Text='Espera SQL local';$sqlModeLabel.Dock='Fill';$sqlModeLabel.TextAlign='MiddleLeft'
+        $sqlModeCombo=New-Object Windows.Forms.ComboBox;$sqlModeCombo.Dock='Fill';$sqlModeCombo.DropDownStyle='DropDownList';$sqlModeCombo.Margin=New-Object Windows.Forms.Padding(4,4,10,4)
+        foreach($m in @('None','AnyAutomaticLocal','AllAutomaticLocal')){[void]$sqlModeCombo.Items.Add($m)}
+        $sqlModeCombo.SelectedItem=[string]$execSource.SqlServiceWaitMode;if($sqlModeCombo.SelectedIndex -lt 0){$sqlModeCombo.SelectedItem='AnyAutomaticLocal'}
+        [void]$executionGrid.Controls.Add($sqlModeLabel,0,5);[void]$executionGrid.Controls.Add($sqlModeCombo,1,5)
+        $chkRetryCli=New-Object Windows.Forms.CheckBox;$chkRetryCli.Text='Repetir após erro da CLI';$chkRetryCli.Dock='Fill';$chkRetryCli.Checked=ConvertTo-AutoRunnerBoolean -Value $execSource.RetryOnCliError -Default $false
+        [void]$executionGrid.Controls.Add($chkRetryCli,2,5);$executionGrid.SetColumnSpan($chkRetryCli,2)
+        $chkStop=New-Object Windows.Forms.CheckBox;$chkStop.Text='Parar após a primeira falha';$chkStop.Dock='Fill';$chkStop.Checked=[bool]$execSource.StopOnFirstFailure
+        $chkTaskRestart=New-Object Windows.Forms.CheckBox;$chkTaskRestart.Text='Agendador reinicia a tarefa após falha';$chkTaskRestart.Dock='Fill';$chkTaskRestart.Checked=[bool]$execSource.TaskRestartOnFailure
+        [void]$executionGrid.Controls.Add($chkStop,0,6);$executionGrid.SetColumnSpan($chkStop,2);[void]$executionGrid.Controls.Add($chkTaskRestart,2,6);$executionGrid.SetColumnSpan($chkTaskRestart,2)
+
+        $logGrid=New-Object Windows.Forms.TableLayoutPanel;$logGrid.Dock='Top';$logGrid.AutoSize=$true;$logGrid.ColumnCount=6;$logGrid.RowCount=2;$logGrid.Padding=New-Object Windows.Forms.Padding(10)
+        foreach($pct in @(22,11,22,11,22,12)){[void]$logGrid.ColumnStyles.Add((New-Object Windows.Forms.ColumnStyle([Windows.Forms.SizeType]::Percent,$pct)))}
+        1..2|ForEach-Object{[void]$logGrid.RowStyles.Add((New-Object Windows.Forms.RowStyle([Windows.Forms.SizeType]::Absolute,38)))}
+        $loggingGroup.Controls.Add($logGrid)
+        $logSource=if($existing){$existing.Logging}else{$defaults.Logging}
+        function Add-LogNumeric([string]$Label,[int]$Pair,[int]$Min,[int]$Max,[int]$Value){
+            $c=$Pair*2;$l=New-Object Windows.Forms.Label;$l.Text=$Label;$l.Dock='Fill';$l.TextAlign='MiddleLeft';$l.AutoEllipsis=$true
+            $n=New-Object Windows.Forms.NumericUpDown;$n.Dock='Fill';$n.Minimum=$Min;$n.Maximum=$Max;$n.Value=[Math]::Min($Max,[Math]::Max($Min,$Value));$n.Margin=New-Object Windows.Forms.Padding(4)
+            [void]$logGrid.Controls.Add($l,$c,0);[void]$logGrid.Controls.Add($n,$c+1,0);return $n
+        }
+        $numLogMax=Add-LogNumeric 'Tamanho por log (MB)' 0 1 1024 ([int]$logSource.MaxSizeMB)
+        $numLogKeep=Add-LogNumeric 'Arquivos mantidos' 1 1 50 ([int]$logSource.KeepFiles)
+        $numLogRetention=Add-LogNumeric 'Retenção (dias)' 2 1 3650 ([int]$logSource.RetentionDays)
+        $logHint=New-Object Windows.Forms.Label;$logHint.Text='Esses valores só controlam os logs do AutoRunner; não alteram retenção ou destino dos backups.';$logHint.Dock='Fill';$logHint.ForeColor=$colorMuted;$logHint.TextAlign='MiddleLeft';$logHint.AutoEllipsis=$true
+        [void]$logGrid.Controls.Add($logHint,0,1);$logGrid.SetColumnSpan($logHint,6)
+
+        $manualAdd.Add_Click({
+            if([string]::IsNullOrWhiteSpace($manualText.Text)){return}
+            $manualName=$manualText.Text.Trim();$exists=$false
+            foreach($r in $grid.Rows){if(([string]$r.Cells['Name'].Value).Trim() -ieq $manualName){$exists=$true;break}}
+            if($exists){[Windows.Forms.MessageBox]::Show('Este job já está na lista.','Validação','OK','Warning')|Out-Null;return}
+            $manualJob=[pscustomobject]@{Name=$manualName;Type='Desconhecido';IsBackup=$null;IsScheduled=$null;LastRunAt='';Confidence='Low';Source='Manual'}
+            [void](Add-AutoRunnerJobGridRow -Job $manualJob -Selected $true -BackupType 'Default')
+            $manualText.Clear()
+        })
+
+        $buttonPanel=New-Object Windows.Forms.FlowLayoutPanel;$buttonPanel.Dock='Fill';$buttonPanel.FlowDirection='RightToLeft';$buttonPanel.WrapContents=$false;$buttonPanel.Margin=0;$buttonPanel.Padding=New-Object Windows.Forms.Padding(0,8,0,0)
+        $save=New-ModernButton 'Salvar configuração' 'Primary' 38;$save.Dock='None';$save.Width=165
+        $cancel=New-ModernButton 'Cancelar' 'Secondary' 38;$cancel.Dock='None';$cancel.Width=100;$cancel.DialogResult='Cancel'
+        [void]$buttonPanel.Controls.Add($save);[void]$buttonPanel.Controls.Add($cancel);[void]$root.Controls.Add($buttonPanel,0,5);$dialog.CancelButton=$cancel
+
+        $applyAdvancedUi={
+            $enabled=[bool]$advancedToggle.Checked
+            $dpiScale=1.0
+            try{if($dialog.DeviceDpi -gt 96){$dpiScale=[double]$dialog.DeviceDpi/96.0}}catch{}
+            $advancedPanel.Visible=$enabled
+            $root.RowStyles[4].Height=if($enabled){[int][Math]::Ceiling(300*$dpiScale)}else{0}
+            foreach($columnName in @('Type','Scheduled','LastRun','Source','BackupType')){$grid.Columns[$columnName].Visible=$enabled}
+            $baseHeight=if($enabled){760}else{590}
+            $minHeight=[int][Math]::Ceiling($baseHeight*$dpiScale)
+            $root.Height=[Math]::Max($minHeight,$dialog.ClientSize.Height-4)
+            if($enabled -and $dialog.Height -lt [int][Math]::Ceiling(760*$dpiScale)){
+                $target=[int][Math]::Ceiling(800*$dpiScale)
+                $dialog.Height=[Math]::Min($target,[Windows.Forms.Screen]::FromControl($dialog).WorkingArea.Height-24)
+            }
+        }
+        $advancedToggle.Add_CheckedChanged({& $applyAdvancedUi})
+        $dialog.Add_Resize({& $applyAdvancedUi})
+
         $save.Add_Click({
             try {
-                $chosen=New-Object System.Collections.Generic.List[object]
-                foreach($row in $grid.Rows){ if([bool]$row.Cells['Selected'].Value){ $name=([string]$row.Cells['Name'].Value).Trim(); $type=[string]$row.Cells['Type'].Value; $confidence=if($row.Tag){[string]$row.Tag.Confidence}else{'Low'}; if($type -ne 'Backup' -or $confidence -ne 'High' -or $row.Cells['Scheduled'].Value -ne 'Sim' -or $row.Cells['Source'].Value -eq 'Manual'){ $answer=[Windows.Forms.MessageBox]::Show("O job '$name' é não agendado, manual ou não foi identificado com alta confiança como Backup. Confirma tecnicamente a inclusão?",'Confirmação técnica','YesNo','Warning'); if($answer -ne 'Yes'){continue} }; $chosen.Add([pscustomobject]@{Name=$name;Type=$type;IsScheduled=if($row.Cells['Scheduled'].Value -eq 'Sim'){$true}elseif($row.Cells['Scheduled'].Value -eq 'Não'){$false}else{$null};LastRunAt=[string]$row.Cells['LastRun'].Value;Source=[string]$row.Cells['Source'].Value;BackupType=[string]$row.Cells['BackupType'].Value;ConfirmedByTechnician=$true;ConfirmedAtUtc=[DateTime]::UtcNow.ToString('o');ConfirmedBy=[Security.Principal.WindowsIdentity]::GetCurrent().Name;ConfirmationReason=$(if($row.Cells['Source'].Value -eq 'Manual'){'Nome informado manualmente'}elseif($row.Cells['Scheduled'].Value -eq 'Não'){'Job não agendado incluído explicitamente'}elseif($confidence -ne 'High'){'Descoberta de baixa/média confiança confirmada'}else{'Job de backup selecionado explicitamente'})}) } }
-                if($chosen.Count -eq 0){[Windows.Forms.MessageBox]::Show('Selecione ao menos um job.','Validação','OK','Warning')|Out-Null;return}
-                if([int]$numRetries.Value -gt 0 -and $chkRetryCli.Checked){$risk=[Windows.Forms.MessageBox]::Show('Repetir após código de erro da CLI pode disparar o mesmo job novamente se a versão da CLI tiver aceitado parcialmente a primeira chamada. Confirma esta configuração?','Risco de duplicidade','YesNo','Warning');if($risk -ne 'Yes'){return}}
-                if($chkTaskRestart.Checked -and [int]$numInterval.Value -eq 0){$risk=[Windows.Forms.MessageBox]::Show('Reiniciar a tarefa com intervalo mínimo 0 pode repetir jobs que já retornaram sem erro antes de uma falha posterior. Confirma esta combinação?','Risco de repetição','YesNo','Warning');if($risk -ne 'Yes'){return}}
-                $execution=[pscustomobject]@{StartupDelayMinutes=[int]$numDelay.Value;MinimumIntervalHours=[int]$numInterval.Value;RetryCount=[int]$numRetries.Value;RetryDelayMinutes=[int]$numRetryDelay.Value;RetryOnCliError=$chkRetryCli.Checked;ServiceWaitSeconds=[int]$numService.Value;SqlServiceWaitSeconds=[int]$numSqlService.Value;SqlServiceWaitMode=[string]$sqlModeCombo.SelectedItem;ExecutionTimeLimitHours=[int]$numLimit.Value;PostJobDelaySeconds=[int]$numPostDelay.Value;StopOnFirstFailure=$chkStop.Checked;TaskRestartOnFailure=$chkTaskRestart.Checked;TaskRestartCount=[int]$numRestartCount.Value;TaskRestartIntervalMinutes=[int]$numRestartInterval.Value}
-                $logging=[pscustomobject]@{MaxSizeMB=[int]$numLogMax.Value;KeepFiles=[int]$numLogKeep.Value;RetentionDays=[int]$numLogRetention.Value}
-                $request=New-InstallRequest -Jobs @($chosen) -Execution $execution -Logging $logging
+                $chosen=[System.Collections.Generic.List[object]]::new()
+                $needsTechnicalConfirmation=[System.Collections.Generic.List[string]]::new()
+                foreach($row in $grid.Rows){
+                    if(-not [bool]$row.Cells['Selected'].Value){continue}
+                    $name=([string]$row.Cells['Name'].Value).Trim();if([string]::IsNullOrWhiteSpace($name)){continue}
+                    $job=$row.Tag;$confidence=if($job){[string]$job.Confidence}else{'Low'}
+                    if($row.Cells['Scheduled'].Value -ne 'Sim' -or $row.Cells['Source'].Value -eq 'Manual' -or $confidence -ne 'High'){
+                        [void]$needsTechnicalConfirmation.Add($name)
+                    }
+                    $backupType=if($advancedToggle.Checked){[string]$row.Cells['BackupType'].Value}else{'Default'}
+                    if([string]::IsNullOrWhiteSpace($backupType)){$backupType='Default'}
+                    [void]$chosen.Add([pscustomobject][ordered]@{
+                        Name=$name
+                        Type=[string]$row.Cells['Type'].Value
+                        IsScheduled=if($row.Cells['Scheduled'].Value -eq 'Sim'){$true}elseif($row.Cells['Scheduled'].Value -eq 'Não'){$false}else{$null}
+                        LastRunAt=[string]$row.Cells['LastRun'].Value
+                        Source=[string]$row.Cells['Source'].Value
+                        BackupType=$backupType
+                        ConfirmedByTechnician=$true
+                        ConfirmedAtUtc=[DateTime]::UtcNow.ToString('o')
+                        ConfirmedBy=[Security.Principal.WindowsIdentity]::GetCurrent().Name
+                        ConfirmationReason=$(if($advancedToggle.Checked){'Selecionado explicitamente com configurações avançadas'}else{'Selecionado explicitamente no modo simples'})
+                    })
+                }
+                if($chosen.Count -eq 0){[Windows.Forms.MessageBox]::Show('Selecione ao menos um job para executar no boot.','Validação','OK','Warning')|Out-Null;return}
+                if($needsTechnicalConfirmation.Count -gt 0){
+                    $names=($needsTechnicalConfirmation.ToArray() | Select-Object -First 8) -join ', '
+                    $extra=if($needsTechnicalConfirmation.Count -gt 8){" e mais $($needsTechnicalConfirmation.Count-8)"}else{''}
+                    $message="Alguns itens selecionados não puderam ser confirmados como backups agendados pela descoberta local: $names$extra.`r`n`r`nO AutoRunner apenas chamará os nomes que você marcou e não alterará os jobs no SQLBackupAndFTP. Deseja continuar?"
+                    if([Windows.Forms.MessageBox]::Show($message,'Confirmar jobs selecionados','YesNo','Warning') -ne 'Yes'){return}
+                }
+
+                if($advancedToggle.Checked){
+                    if([int]$numRetries.Value -gt 0 -and $chkRetryCli.Checked){
+                        if([Windows.Forms.MessageBox]::Show('Repetir após erro da CLI pode disparar o mesmo job novamente se a primeira chamada tiver sido aceita parcialmente. Continuar?','Configuração avançada','YesNo','Warning') -ne 'Yes'){return}
+                    }
+                    if($chkTaskRestart.Checked -and [int]$numInterval.Value -eq 0){
+                        $risk='Risco de repetição: reiniciar a tarefa com intervalo mínimo 0 pode executar novamente jobs que já terminaram antes de uma falha posterior. Confirma esta combinação de risco?'
+                        if([Windows.Forms.MessageBox]::Show($risk,'Risco de repetição','YesNo','Warning') -ne 'Yes'){return}
+                    }
+                    $execution=[pscustomobject][ordered]@{
+                        StartupDelayMinutes=[int]$numDelay.Value;MinimumIntervalHours=[int]$numInterval.Value;RetryCount=[int]$numRetries.Value;RetryDelayMinutes=[int]$numRetryDelay.Value
+                        RetryOnCliError=[bool]$chkRetryCli.Checked;ServiceWaitSeconds=[int]$numService.Value;SqlServiceWaitSeconds=[int]$numSqlService.Value;SqlServiceWaitMode=[string]$sqlModeCombo.SelectedItem
+                        ExecutionTimeLimitHours=[int]$numLimit.Value;PostJobDelaySeconds=[int]$numPostDelay.Value;StopOnFirstFailure=[bool]$chkStop.Checked;TaskRestartOnFailure=[bool]$chkTaskRestart.Checked
+                        TaskRestartCount=[int]$numRestartCount.Value;TaskRestartIntervalMinutes=[int]$numRestartInterval.Value
+                    }
+                    $logging=[pscustomobject][ordered]@{MaxSizeMB=[int]$numLogMax.Value;KeepFiles=[int]$numLogKeep.Value;RetentionDays=[int]$numLogRetention.Value}
+                }else{
+                    # Modo simples: comportamento previsível, sem retries e sem
+                    # knobs técnicos. Os defaults são os mesmos validados pelo
+                    # instalador/runner e não dependem do estado da interface.
+                    $execution=$defaults.Execution | Select-Object *
+                    # No modo simples, cada boot representa uma execução nova.
+                    # O intervalo anti-repetição é um ajuste avançado e não deve
+                    # fazer uma reinicialização legítima parecer uma falha.
+                    $execution.MinimumIntervalHours=0
+                    $execution.RetryCount=0
+                    $execution.RetryOnCliError=$false
+                    $execution.TaskRestartOnFailure=$false
+                    $logging=$defaults.Logging | Select-Object *
+                }
+
+                Set-AutoRunnerUserSettings -UseAdvancedSettings ([bool]$advancedToggle.Checked)
+                $request=New-InstallRequest -Jobs $chosen.ToArray() -Execution $execution -Logging $logging
                 $mode=if($installed.IsInstalled){'Reconfigure'}else{'Install'}
-                $dialog.Enabled=$false; $code=Invoke-InstallerRequest -Mode $mode -Request $request; $dialog.Enabled=$true
-                if($code -eq 0){[Windows.Forms.MessageBox]::Show('Configuração aplicada e validada com sucesso.','AutoRunner','OK','Information')|Out-Null;$dialog.DialogResult='OK';$dialog.Close()}else{[Windows.Forms.MessageBox]::Show("A operação falhou (código $code). Consulte install.log.",'AutoRunner','OK','Error')|Out-Null}
-            }catch{ $dialog.Enabled=$true; [Windows.Forms.MessageBox]::Show($_.Exception.Message,'Erro','OK','Error')|Out-Null }
+                $dialog.Enabled=$false;$code=Invoke-InstallerRequest -Mode $mode -Request $request;$dialog.Enabled=$true
+                if($code -eq 0){
+                    [Windows.Forms.MessageBox]::Show('Configuração aplicada com sucesso. Use “Testar backup agora” e confirme o resultado no histórico/destino.','AutoRunner','OK','Information')|Out-Null
+                    $dialog.DialogResult='OK';$dialog.Close()
+                }else{
+                    [Windows.Forms.MessageBox]::Show("A operação falhou (código $code). Consulte install.log.",'AutoRunner','OK','Error')|Out-Null
+                }
+            }catch{
+                $dialog.Enabled=$true
+                [Windows.Forms.MessageBox]::Show($_.Exception.Message,'Erro','OK','Error')|Out-Null
+            }
         })
-        Set-WindowOnActiveScreen -Window $dialog -PreferredWidth 1000 -PreferredHeight 800 -MinimumWidth 860 -MinimumHeight 620
+
+        Set-WindowOnActiveScreen -Window $dialog -PreferredWidth 980 -PreferredHeight $(if($useAdvanced){780}else{650}) -MinimumWidth 760 -MinimumHeight 560
+        & $applyAdvancedUi
         [void]$dialog.ShowDialog($form)
         Refresh-StatusUi
     }
@@ -1446,7 +1684,7 @@ public static class NativeUi {
             if ($requiredButtons.Count -ne 20 -or @($requiredButtons | Where-Object { $null -eq $_ -or [string]::IsNullOrWhiteSpace($_.Text) }).Count -gt 0) {
                 throw 'Smoke test da GUI detectou botão obrigatório ausente ou sem texto.'
             }
-            if (-not $form.Controls.Contains($rootGrid) -or -not $rootGrid.Controls.Contains($mainGrid) -or -not $statusGroup.Controls.Contains($statusText)) {
+            if (-not $form.Controls.Contains($rootGrid) -or -not $rootGrid.Controls.Contains($mainHost) -or -not $mainHost.Controls.Contains($mainGrid) -or -not $statusGroup.Controls.Contains($statusText)) {
                 throw 'Smoke test da GUI detectou estrutura visual incompleta.'
             }
             if($sqlCard.Title.Text -eq '' -or $automationCard.Title.Text -eq '' -or $lastCard.Title.Text -eq ''){
@@ -1498,7 +1736,7 @@ public static class NativeUi {
         }
     })
     $form.Add_Load({
-        Set-WindowOnActiveScreen -Window $form -PreferredWidth 1160 -PreferredHeight 760 -MinimumWidth 940 -MinimumHeight 650
+        Set-WindowOnActiveScreen -Window $form -PreferredWidth 1180 -PreferredHeight 800 -MinimumWidth 900 -MinimumHeight 620
     })
     $form.Add_Shown({
         Write-ManagerLog 'Janela principal exibida.'

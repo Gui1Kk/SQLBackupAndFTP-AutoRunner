@@ -79,6 +79,7 @@ def manifest_from_pe(path: Path) -> str:
 
 
 version = read("VERSION").strip()
+channel = read("RELEASE_CHANNEL").strip()
 module = read("modules/AutoRunner.Core.psm1")
 setup = read("scripts/Setup-Wizard.ps1")
 manager = read("scripts/Manager.ps1")
@@ -91,7 +92,7 @@ workflow = read(".github/workflows/qa.yml")
 all_runtime = "\n".join((module, setup, manager, launcher, setup_c, release_builder))
 
 parts=tuple(int(x) for x in version.split("."))
-add("Versão canônica", parts >= (2,3,5) and f"$script:AutoRunnerVersion = '{version}'" in module and "$script:AutoRunnerReleaseChannel = 'RC'" in module, f"VERSION={version}")
+add("Versão canônica", parts >= (2,3,5) and f"$script:AutoRunnerVersion = '{version}'" in module and f"$script:AutoRunnerReleaseChannel = '{channel}'" in module, f"VERSION={version}; channel={channel}")
 add("Builder lê VERSION", "read_version(root)" in release_builder and 'VERSION = "2.' not in release_builder, "sem versão duplicada no builder")
 add("Host gerenciado removido", all(token not in all_runtime for token in ("AutoRunner.Host", "Build-AutoRunnerManagedHost", "csc.exe", "Framework64")), "inicialização não depende de compilação .NET local")
 add("Launcher usa PowerShell 5.1 STA", all(token in launcher for token in ("WindowsPowerShell\\\\v1.0\\\\powershell.exe", "-STA", "-File", "scripts\\\\Manager.ps1")), "backend direto e sem host intermediário")

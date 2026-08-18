@@ -1,61 +1,48 @@
-# Guia de uso 2.3.5 RC
+# Guia de uso 3.0.1
 
-## Instalar
+## Instalar o aplicativo
 
-1. Execute o Setup 2.3.5 RC como administrador.
-2. Confirme a pasta detectada do SQLBackupAndFTP.
-3. Quando necessário, selecione manualmente a pasta que contém `SqlBak.Job.Cli.exe`.
-4. Escolha o atalho da Área de Trabalho.
-5. Conclua e abra o AutoRunner.
+1. Execute `SQLBackupAndFTP-AutoRunner-Setup-v3.0.1.exe`.
+2. Autorize o UAC.
+3. Confirme a instalação e, se desejado, o atalho da Área de Trabalho.
+4. O SQLBackupAndFTP pode ser detectado automaticamente ou localizado manualmente.
 
-A ausência do SQLBackupAndFTP não precisa interromper a instalação do aplicativo, mas impede instalar a automação até que uma CLI válida seja localizada.
+## Configurar a automação, modo recomendado
 
-## Configurar automação
+1. Abra o AutoRunner.
+2. Clique em **Instalar automação**.
+3. Marque os jobs desejados.
+4. Confira a coluna **Situação**.
+5. Clique em **Salvar configuração**.
+6. Se houver jobs cuja classificação/agendamento não pôde ser confirmado, confira a única confirmação exibida.
+7. Use **Testar backup agora** e confira o histórico e o destino.
 
-1. Clique em **Instalar automação**.
-2. Selecione explicitamente os jobs.
-3. Confirme jobs manuais ou de baixa confiança.
-4. Configure atraso após boot, intervalo mínimo e retentativas.
-5. Conclua e use **Validar instalação**.
+Você não precisa configurar tipo de backup, retries, tempos ou logs para o fluxo normal.
 
-## Testar
+## Configurações avançadas
 
-1. Clique em **Testar backup agora**.
-2. Confira o histórico do job no SQLBackupAndFTP.
-3. Confira o arquivo no destino.
-4. Faça uma restauração de teste.
+Marque **Usar configurações avançadas** somente quando houver uma necessidade técnica específica. A tela então exibe tipo de backup por job, parâmetros de execução/resiliência, adição manual de job e política de logs.
+
+Alterar esses parâmetros pode aumentar repetição de jobs ou tempo de execução. Combinações de maior risco continuam exigindo confirmação.
+
+## Central
+
+Use **Conectar à Central** para matricular a máquina no Control Plane. A conexão do agente é outbound HTTPS/WSS; nenhuma API de entrada é aberta na máquina do cliente.
+
+## Teste mínimo após instalar
+
+1. **Validar instalação**.
+2. **Testar backup agora**.
+3. Confirmar execução no histórico do SQLBackupAndFTP.
+4. Confirmar o arquivo no destino.
+5. Reiniciar o Windows.
+6. Confirmar a execução automática esperada.
+7. Fazer uma restauração de teste.
 
 ## Manutenção
 
-- **Validar instalação:** configuração, manifesto, ACL, tarefa e caminhos;
-- **Reparar automação:** recria runtime e tarefa preservando jobs;
-- **Remover automação:** remove tarefa e dados operacionais sem apagar jobs originais;
-- **Reparar aplicativo:** executa o Setup preservado por fluxo externo seguro;
-- **Desinstalar aplicativo:** remove aplicativo e automação, preservando jobs do SQLBackupAndFTP;
-- **Exportar diagnóstico:** reúne logs, estado, configuração, tarefa e eventos.
-
-## Instalação silenciosa
-
-```text
-SQLBackupAndFTP-AutoRunner-Setup-v2.3.5-RC.exe /silent /desktop
-```
-
-Opções:
-
-```text
-/silent /desktop /nolaunch /notutorial /repair /uninstall /purgedata
-```
-
-`/deferred` é interno e não deve ser usado manualmente.
-
-## Logs precoces
-
-```text
-%TEMP%\SQLBackupAndFTPAuto\setup-startup.log
-%TEMP%\SQLBackupAndFTPAuto\manager-startup.log
-%TEMP%\SQLBackupAndFTPAuto\manager.log
-```
-
-## Aprovação
-
-Uma tela de sucesso ou código zero não substitui histórico, arquivo no destino e restauração. Teste também o boot real.
+- **Validar instalação**: configuração, hashes, ACL, tarefa e caminhos;
+- **Reparar automação**: recria o runtime/tarefa preservando jobs;
+- **Reparar aplicativo**: repõe os arquivos do aplicativo;
+- **Desinstalar aplicativo**: remove AutoRunner/automação sem apagar jobs do SQLBackupAndFTP;
+- **Exportar diagnóstico**: gera pacote com configuração, estado, logs, tarefa e eventos.

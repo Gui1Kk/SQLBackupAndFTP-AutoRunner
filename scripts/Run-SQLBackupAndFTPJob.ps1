@@ -194,8 +194,8 @@ try {
     # dentro do intervalo, mas não bloqueia um job novo ou um job que falhou anteriormente.
     if (-not $Force -and $Trigger -eq 'Startup' -and [int]$config.Execution.MinimumIntervalHours -gt 0) {
         $allWithinInterval = $true
-        $preflightMessages = New-Object System.Collections.Generic.List[string]
-        $preflightResults = New-Object System.Collections.Generic.List[object]
+        $preflightMessages = [System.Collections.Generic.List[string]]::new()
+        $preflightResults = [System.Collections.Generic.List[object]]::new()
         foreach ($configuredJob in $configuredJobs) {
             $configuredName = [string]$configuredJob.Name
             if ([string]::IsNullOrWhiteSpace($configuredName)) { $allWithinInterval = $false; break }
@@ -295,7 +295,7 @@ try {
         throw 'Configuração sem jobs.'
     }
 
-    $results = New-Object System.Collections.Generic.List[object]
+    $results = [System.Collections.Generic.List[object]]::new()
     $processedJobKeys = @{}
     $retryCount = [int]$config.Execution.RetryCount
     $retryDelay = [int]$config.Execution.RetryDelayMinutes

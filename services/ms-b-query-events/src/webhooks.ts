@@ -67,7 +67,7 @@ export async function deliverOneWebhook() {
     const body = JSON.stringify({ id:d.event_id, type:d.event_type, occurredAt:new Date().toISOString(), organizationId:d.organization_id, data:d.payload });
     const timestamp = Math.floor(Date.now()/1000).toString();
     const signature = crypto.createHmac('sha256', secret).update(`${timestamp}.${body}`).digest('hex');
-    const response = await postPinnedWebhook(target,body,{'content-type':'application/json','user-agent':'AutoRunner-ControlPlane/3.0.0-RC','x-autorunner-event-id':d.event_id,'x-autorunner-event-type':d.event_type,'x-autorunner-timestamp':timestamp,'x-autorunner-signature':`v1=${signature}`});
+    const response = await postPinnedWebhook(target,body,{'content-type':'application/json','user-agent':'AutoRunner-ControlPlane/3.0.1','x-autorunner-event-id':d.event_id,'x-autorunner-event-type':d.event_type,'x-autorunner-timestamp':timestamp,'x-autorunner-signature':`v1=${signature}`});
     const excerpt = redactText((await response.text()).slice(0,2048));
     if (response.ok) {
       await pool.query(`update ar_webhook_deliveries set status='succeeded',completed_at=now(),response_status=$2,response_excerpt=$3,error_summary=null where id=$1`,[d.id,response.status,excerpt]);

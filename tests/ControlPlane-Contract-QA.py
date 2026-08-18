@@ -7,7 +7,7 @@ ROOT=Path(__file__).resolve().parents[1]; RESULTS=[]
 def rd(p): return (ROOT/p).read_text(encoding='utf-8-sig')
 def add(n,p,d): RESULTS.append({'name':n,'passed':bool(p),'detail':d}); print(f"[{'PASS' if p else 'FAIL'}] {n}: {d}")
 version=rd('VERSION').strip(); channel=rd('RELEASE_CHANNEL').strip()
-add('Versão 3.0.0-RC',version=='3.0.0' and channel.upper()=='RC',f'{version}-{channel}')
+add('Versão 3.0.1 Stable',version=='3.0.1' and channel.upper()=='STABLE',f'{version}-{channel}')
 compose=yaml.safe_load(rd('deploy/docker/docker-compose.yml'))
 services=compose.get('services',{})
 add('Compose contém plano de controle completo',all(x in services for x in ('postgres','domain-migrate','auth-migrate','bootstrap-admin','ms-a','ms-b','ms-c','caddy')),', '.join(services))

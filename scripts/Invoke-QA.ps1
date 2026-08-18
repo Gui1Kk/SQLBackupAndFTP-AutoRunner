@@ -14,7 +14,7 @@ Import-Module $module -Force -DisableNameChecking
 if ([string]::IsNullOrWhiteSpace($OutputDirectory)) { $OutputDirectory = Join-Path $root 'test-results' }
 New-Item -ItemType Directory -Path $OutputDirectory -Force | Out-Null
 $reportPath = Join-Path $OutputDirectory ('QA_Windows_{0}.txt' -f (Get-Date -Format 'yyyyMMdd_HHmmss'))
-$results = New-Object System.Collections.Generic.List[object]
+$results = [System.Collections.Generic.List[object]]::new()
 
 function Add-Result {
     param([string]$Name,[ValidateSet('PASS','FAIL','SKIP')][string]$Status,[string]$Detail)
@@ -41,7 +41,7 @@ $sim = $null
 New-Item -ItemType Directory -Path $work -Force | Out-Null
 try {
     Invoke-TestCase 'Sintaxe PowerShell AST' {
-        $errors = New-Object System.Collections.Generic.List[string]
+        $errors = [System.Collections.Generic.List[string]]::new()
         foreach ($file in @(Get-ChildItem -LiteralPath $root -Recurse -File | Where-Object { $_.Extension -in @('.ps1','.psm1') })) {
             $tokens=$null;$parseErrors=$null
             [Management.Automation.Language.Parser]::ParseFile($file.FullName,[ref]$tokens,[ref]$parseErrors) | Out-Null
@@ -410,24 +410,38 @@ public static class FakeCli {
             Assert-QA (Test-AutoRunnerAdministrator) 'Execute como administrador.'
             'Execução elevada.'
         }
-        Invoke-TestCase 'ACL real em ProgramData' {
+        Invoke-TestCase 'ACL FullControl 3.0.1 real em ProgramData' {
             $aclDir=Join-Path $env:ProgramData ('SQLBackupAndFTPAuto-QA-'+[Guid]::NewGuid().ToString('N'))
             try {
                 New-Item -ItemType Directory -Path (Join-Path $aclDir 'scripts') -Force|Out-Null
                 New-Item -ItemType Directory -Path (Join-Path $aclDir 'logs') -Force|Out-Null
                 Set-Content -LiteralPath (Join-Path $aclDir 'config.json') -Value '{}' -Encoding UTF8
                 Set-Content -LiteralPath (Join-Path $aclDir 'scripts\Manager.ps1') -Value '# teste' -Encoding UTF8
-                [void](Protect-AutoRunnerDirectory -Path $aclDir)
-                $acl=Get-Acl -LiteralPath $aclDir
-                $unsafe=@($acl.Access|Where-Object{$_.IdentityReference.Value -match 'Users|Usuarios|S-1-5-32-545' -and $_.AccessControlType -eq 'Allow' -and (($_.FileSystemRights -band [Security.AccessControl.FileSystemRights]::Write) -ne 0)})
-                $configAcl=@((Get-Acl -LiteralPath (Join-Path $aclDir 'config.json')).Access|Where-Object{$_.IdentityReference.Value -match 'Users|Usuarios|S-1-5-32-545' -and $_.AccessControlType -eq 'Allow'})
-                $configWrite=@($configAcl|Where-Object{($_.FileSystemRights -band [Security.AccessControl.FileSystemRights]::Write) -ne 0})
-                $configRead=@($configAcl|Where-Object{($_.FileSystemRights -band [Security.AccessControl.FileSystemRights]::Read) -ne 0 -or ($_.FileSystemRights -band [Security.AccessControl.FileSystemRights]::ReadAndExecute) -ne 0})
-                Assert-QA ($unsafe.Count -eq 0) 'Users possui escrita na raiz.'
-                Assert-QA ($configWrite.Count -eq 0) 'Users possui escrita no config.json.'
-                Assert-QA ($configRead.Count -ge 1) 'Users não possui leitura operacional do config.json.'
-                'ACL aplicada: usuários possuem leitura operacional sem permissão de escrita.'
-            } finally { if(Test-Path -LiteralPath $aclDir){& (Join-Path $env:SystemRoot 'System32\icacls.exe') $aclDir '/grant:r' '*S-1-5-32-544:(OI)(CI)F'|Out-Null;Remove-Item -LiteralPath $aclDir -Recurse -Force -ErrorAction SilentlyContinue} }
+
+                [void](Set-AutoRunnerProductFullControlAcl -Path $aclDir)
+                $policy=Test-AutoRunnerProductFullControlAcl -Path $aclDir
+                Assert-QA $policy.IsCompliant ($policy.Issues -join '; ')
+
+                # O gate deve materializar FullControl efetivo nos filhos para
+                # todas as identidades normativas, exceto CREATOR OWNER, que é
+                # intencionalmente uma ACE inherit-only na raiz.
+                $effective=@(Get-AutoRunnerProductEffectiveFullControlSidList)
+                $fileAcl=Get-Acl -LiteralPath (Join-Path $aclDir 'scripts\Manager.ps1')
+                foreach($sidText in $effective){
+                    $found=$false
+                    foreach($entry in @($fileAcl.Access)){
+                        try{$sid=$entry.IdentityReference.Translate([Security.Principal.SecurityIdentifier]).Value}catch{$sid=[string]$entry.IdentityReference.Value}
+                        if($sid -eq $sidText -and $entry.AccessControlType -eq [Security.AccessControl.AccessControlType]::Allow -and (($entry.FileSystemRights -band [Security.AccessControl.FileSystemRights]::FullControl) -eq [Security.AccessControl.FileSystemRights]::FullControl)){$found=$true;break}
+                    }
+                    Assert-QA $found ("SID $sidText sem FullControl efetivo no arquivo filho.")
+                }
+                'Política FullControl 3.0.1 aplicada e validada em raiz, subpasta e arquivo.'
+            } finally {
+                if(Test-Path -LiteralPath $aclDir){
+                    & (Join-Path $env:SystemRoot 'System32\icacls.exe') $aclDir '/grant:r' '*S-1-5-32-544:(OI)(CI)F' '/T' '/C' '/Q'|Out-Null
+                    Remove-Item -LiteralPath $aclDir -Recurse -Force -ErrorAction SilentlyContinue
+                }
+            }
         }
         Invoke-TestCase 'Caminho sob junction é recusado' {
             $real=Join-Path $env:ProgramData ('SQLBackupAndFTPAuto-QA-Real-'+[Guid]::NewGuid().ToString('N'))
@@ -467,7 +481,7 @@ public static class FakeCli {
         }
     }
     else {
-        Add-Result 'ACL real em ProgramData' 'SKIP' 'Use -Integration em Windows como administrador.'
+        Add-Result 'ACL FullControl 3.0.1 real em ProgramData' 'SKIP' 'Use -Integration em Windows como administrador.'
         Add-Result 'Tarefa real registra e executa' 'SKIP' 'Use -Integration em Windows como administrador.'
     }
 
@@ -482,7 +496,7 @@ public static class FakeCli {
     else { Add-Result 'PSScriptAnalyzer' 'SKIP' 'Módulo não instalado; nenhuma aprovação foi inferida.' }
 }
 finally {
-    $summary=New-Object System.Collections.Generic.List[string]
+    $summary=[System.Collections.Generic.List[string]]::new()
     $summary.Add('SQLBackupAndFTP AutoRunner - Relatório de QA Windows')
     $summary.Add('Data: '+(Get-Date).ToString('s'))
     $summary.Add('Versão: '+(Get-AutoRunnerVersion))

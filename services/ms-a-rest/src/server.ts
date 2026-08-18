@@ -50,4 +50,4 @@ app.setErrorHandler(async(error,req,reply)=>{
 
 const close=async()=>{try{await app.close();}finally{process.exit(0);}};process.on('SIGTERM',close);process.on('SIGINT',close);
 await app.listen({host:config.serviceHost,port:config.msAPort});
-log('info','service_started',{port:config.msAPort,version:'3.0.0-RC'});
+log('info','service_started',{port:config.msAPort,version:'3.0.1'});

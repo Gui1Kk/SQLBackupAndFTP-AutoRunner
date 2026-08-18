@@ -60,5 +60,5 @@ export const config = Object.freeze({
   graphqlAllowIntrospection: envBool('GRAPHQL_ALLOW_INTROSPECTION', false),
   webhookAllowHttp: envBool('WEBHOOK_ALLOW_HTTP', false),
   webhookAllowedHosts: csvEnv('WEBHOOK_ALLOWED_HOSTS', []),
-  approvedAgentVersion: env('APPROVED_AGENT_VERSION', '3.0.0-RC'),
+  approvedAgentVersion: env('APPROVED_AGENT_VERSION', '3.0.1'),
 });

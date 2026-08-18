@@ -1,5 +1,24 @@
 # Changelog
 
+## 3.0.1
+
+Stable posterior à homologação real da 3.0.0-RC:
+
+- corrige a aplicação/validação da política FullControl no staging e na árvore instalada;
+- passa a aplicar SIDs numéricos pelo `icacls` com `*SID`, uma identidade por operação, e normaliza a herança dos filhos;
+- trata `CREATOR OWNER` (`S-1-3-0`) como ACE `OI/CI/IO` de herança na raiz, em vez de exigir um SID efetivo impossível em cada arquivo;
+- corrige `Os tipos de argumento não correspondem` ao remover construções `New-Object System.Collections.Generic.List<T>` do código PowerShell e usar construtores .NET/`ToArray()` seguros;
+- corrige a descoberta SQLite afetada pelo mesmo defeito de binder, evitando fallback desnecessário para a listagem CLI de baixa confiança;
+- reconstrói o layout principal com área de ações de altura estável e conteúdo rolável, evitando botões achatados ou invisíveis em DPI/redimensionamento;
+- reconstrói a janela de configuração com DPI, scroll e altura mínima de conteúdo;
+- simplifica a configuração: seleção de jobs é o fluxo padrão e opções técnicas só aparecem com **Usar configurações avançadas**;
+- mantém uma confirmação agregada para jobs cuja classificação/agendamento não pôde ser confirmado;
+- verifica que todos os parâmetros avançados expostos possuem caminho real no runner, tarefa agendada ou rotação de logs;
+- adiciona `V301-Regression-QA.py` e amplia o QA integrado Windows para testar a ACL FullControl real;
+- promove o canal para `Stable` e atualiza contratos, Control Plane, CI e nomes de artefato para `3.0.1`.
+
+> A marca Stable não substitui validação do ambiente: antes de uso crítico, confirme instalação, reinicialização, execução do job, arquivo no destino e restauração real.
+
 ## 3.0.0-RC
 
 - adiciona Control Plane com MS-A REST/OpenAPI/Better Auth, MS-B GraphQL/Webhooks e MS-C WebSocket;

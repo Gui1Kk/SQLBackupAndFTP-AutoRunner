@@ -72,7 +72,7 @@ function Remove-ApplicationDirectorySafe([string]$Path,[switch]$IgnoreMissing){
 }
 function Get-ApplicationProcessesReferencingPath([string]$Path){
     $safe=[IO.Path]::GetFullPath($Path).TrimEnd('\')
-    $result=New-Object System.Collections.Generic.List[object]
+    $result=[System.Collections.Generic.List[object]]::new()
     $rows=$null
     try{$rows=@(Get-CimInstance -ClassName Win32_Process -ErrorAction Stop)}
     catch{try{$rows=@(Get-WmiObject -Class Win32_Process -ErrorAction Stop)}catch{$rows=@()}}
@@ -248,7 +248,7 @@ function Start-ApplicationUnelevated([string]$Path){
     throw 'O aplicativo foi instalado, mas o Windows não confirmou a inicialização da interface. Use Reparar ou consulte os logs em %TEMP%\SQLBackupAndFTPAuto.'
 }
 function Protect-ApplicationDirectory([string]$Path){
-    if(-not(Test-AutoRunnerAdministrator)){throw 'Administrador necessário para aplicar a política ACL 3.0.0-RC.'}
+    if(-not(Test-AutoRunnerAdministrator)){throw 'Administrador necessário para aplicar a política ACL 3.0.1.'}
     if(-not(Test-Path -LiteralPath $Path -PathType Container)){throw "Pasta da aplicação não encontrada: $Path"}
     [void](Set-AutoRunnerProductFullControlAcl -Path $Path)
     foreach($requiredFile in @(
@@ -261,7 +261,7 @@ function Protect-ApplicationDirectory([string]$Path){
     )){if(-not(Test-Path -LiteralPath $requiredFile -PathType Leaf)){throw "Arquivo obrigatório ausente após instalação: $requiredFile"}}
     foreach($executable in @((Join-Path $Path 'SQLBackupAndFTP-AutoRunner.exe'),(Join-Path $Path 'SQLBackupAndFTP-AutoRunner-Setup.exe'))){
         $executionSecurity=Test-AutoRunnerExecutionPathSecurity -ExecutablePath $executable -AllowProductFullControlPolicy
-        if(-not $executionSecurity.IsSafe){throw ('Caminho da aplicação não atende a política 3.0.0-RC: '+($executionSecurity.Issues -join '; '))}
+        if(-not $executionSecurity.IsSafe){throw ('Caminho da aplicação não atende a política 3.0.1: '+($executionSecurity.Issues -join '; '))}
     }
 }
 
@@ -303,7 +303,7 @@ function Write-ApplicationRegistry([string]$Destination,[bool]$HasDesktopShortcu
 }
 function Get-ApplicationFiles {
     $include=@('SQLBackupAndFTP-AutoRunner.exe','README.md','CHANGELOG.md','VERSION','RELEASE_CHANNEL','LICENSE','SECURITY.md','SUPPORT.md')
-    $files=New-Object System.Collections.Generic.List[object]
+    $files=[System.Collections.Generic.List[object]]::new()
     foreach($relative in $include){$p=Join-Path $PayloadRoot $relative;if(Test-Path -LiteralPath $p -PathType Leaf){$files.Add([pscustomobject]@{Source=$p;Relative=$relative})}}
     foreach($dirName in @('assets','modules','scripts','docs','agent')){
         $dir=Join-Path $PayloadRoot $dirName
@@ -383,7 +383,7 @@ function Install-Application([string]$Destination,[bool]$CreateDesktop,[bool]$La
         if($Launch){try{[void](Start-ApplicationUnelevated -Path $launcher)}catch{$script:SetupPostInstallWarning='Aplicativo instalado, porém a abertura automática falhou: '+$_.Exception.Message;Write-Warning $script:SetupPostInstallWarning}}
     }catch{
         $originalException=$_.Exception
-        $rollbackIssues=New-Object System.Collections.Generic.List[string]
+        $rollbackIssues=[System.Collections.Generic.List[string]]::new()
         try{
             if($destinationModified -and (Test-Path -LiteralPath $Destination)){Remove-ApplicationDirectorySafe -Path $Destination -IgnoreMissing}
             if($backupReady -and $backup){Restore-ApplicationDirectoryFromUpgradeBackup -BackupPath $backup -Destination $Destination;$backupReady=$false;$backup=$null}
@@ -466,7 +466,7 @@ function Uninstall-Application([bool]$KeepData){
         Remove-ApplicationDirectorySafe -Path $destination
     }
 
-    $cleanupIssues=New-Object System.Collections.Generic.List[string]
+    $cleanupIssues=[System.Collections.Generic.List[string]]::new()
     foreach($shortcut in @($startMenuShortcut,$desktopShortcutPath)){
         try{Remove-Item -LiteralPath $shortcut -Force -ErrorAction Stop}catch{if(Test-Path -LiteralPath $shortcut){$cleanupIssues.Add('atalho '+$shortcut+': '+$_.Exception.Message)}}
     }

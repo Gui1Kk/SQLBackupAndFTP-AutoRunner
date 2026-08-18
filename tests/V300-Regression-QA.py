@@ -5,7 +5,7 @@ from pathlib import Path
 ROOT=Path(__file__).resolve().parents[1]; R=[]
 def rd(p): return (ROOT/p).read_text(encoding='utf-8-sig')
 def add(n,p,d): R.append({'name':n,'passed':bool(p),'detail':d}); print(f"[{'PASS' if p else 'FAIL'}] {n}: {d}")
-add('Versão 3.0.0 RC',rd('VERSION').strip()=='3.0.0' and rd('RELEASE_CHANNEL').strip().upper()=='RC','canônica')
+v=rd('VERSION').strip(); ch=rd('RELEASE_CHANNEL').strip(); add('Linha de arquitetura 3.x',v.startswith('3.'),f'{v}-{ch}')
 manager=rd('scripts/Manager.ps1'); module=rd('modules/AutoRunner.Core.psm1'); compose=rd('deploy/docker/docker-compose.yml'); agent=rd('agent/remote-control/AutoRunner.RemoteAgent.psm1')
 checks={
  'Manager integra conectar/desconectar Central': all(x in manager for x in ('Conectar à Central','Desconectar da Central','AutoRunner.RemoteAgent')),

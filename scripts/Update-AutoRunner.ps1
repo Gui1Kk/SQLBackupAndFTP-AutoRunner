@@ -59,7 +59,7 @@ $sumPath=Join-Path $work 'SHA256SUMS.txt'
 try{
     Invoke-WebRequest -Uri $sumUrl -Headers $headers -UseBasicParsing -TimeoutSec 30 -OutFile $sumPath -ErrorAction Stop
     Invoke-WebRequest -Uri $setupUrl -Headers $headers -UseBasicParsing -TimeoutSec 120 -OutFile $setupPath -ErrorAction Stop
-    $expectedHashes=New-Object System.Collections.Generic.List[string]
+    $expectedHashes=[System.Collections.Generic.List[string]]::new()
     foreach($line in @(Get-Content -LiteralPath $sumPath -Encoding UTF8)){
         if($line -match '^([A-Fa-f0-9]{64})\s+\*?(.+)$' -and $Matches[2].Trim() -ieq $setupName){$expectedHashes.Add($Matches[1].ToUpperInvariant())}
     }

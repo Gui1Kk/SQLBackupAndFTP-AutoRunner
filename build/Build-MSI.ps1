@@ -49,7 +49,7 @@ try{
     Copy-Item -LiteralPath (Join-Path $RootDirectory 'scripts\Msi-Cleanup.ps1') -Destination (Join-Path $sourceRoot 'scripts\Msi-Cleanup.ps1') -Force
     Copy-Item -LiteralPath (Join-Path $RootDirectory 'native\SQLBackupAndFTP-AutoRunner-MsiBridge.exe') -Destination (Join-Path $sourceRoot 'SQLBackupAndFTP-AutoRunner-MsiBridge.exe') -Force
     $checksumPath=Join-Path $sourceRoot 'SHA256SUMS.txt'
-    $checksumLines=New-Object System.Collections.Generic.List[string]
+    $checksumLines=[System.Collections.Generic.List[string]]::new()
     foreach($file in @(Get-ChildItem -LiteralPath $sourceRoot -Recurse -File -Force|Where-Object{$_.FullName -ine $checksumPath}|Sort-Object FullName)){
         $relative=$file.FullName.Substring($sourceRoot.Length).TrimStart('\').Replace('\','/')
         $checksumLines.Add("$((Get-FileHash -LiteralPath $file.FullName -Algorithm SHA256).Hash) *$relative")

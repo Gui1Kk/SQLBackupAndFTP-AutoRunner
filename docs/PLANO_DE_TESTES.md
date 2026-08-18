@@ -1,4 +1,4 @@
-# Plano de testes 2.3.5 RC
+# Plano de testes 3.0.1
 
 ## Gates automatizados
 

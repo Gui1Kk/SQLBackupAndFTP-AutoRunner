@@ -1,60 +1,60 @@
-# Relatório de QA 2.3.5 RC
+# Relatório de QA 3.0.1
 
-## Escopo
+## Estado
 
-A 2.3.5 RC consolida as correções que seriam distribuídas em versões intermediárias. O trabalho partiu dos defeitos confirmados em Windows nas versões 2.2.5 e 2.2.6:
+Canal: **Stable**. Este relatório descreve os gates automatizados executados durante a construção da 3.0.1 após os defeitos encontrados na homologação real da 3.0.0-RC.
 
-- falso diagnóstico de junction quando a inspeção falhava por outro motivo;
-- acesso negado durante atualização sobre uma instalação existente;
-- inicialização do Portable dependente de host .NET compilado localmente;
-- código-fonte e artefatos de release sem origem única e reproduzível.
+## Correções cobertas
 
-## Correções estruturais
+- política FullControl 3.x e semântica inherit-only de CREATOR OWNER;
+- erro PowerShell `Os tipos de argumento não correspondem`;
+- descoberta SQLite;
+- salvamento/reconfiguração dos jobs;
+- modo simples/avançado;
+- layout adaptativo/scroll;
+- mapeamento de todos os parâmetros avançados;
+- regressões locais 2.x;
+- Control Plane e contratos;
+- transação de upgrade e state machine.
 
-- launcher nativo x64 chama diretamente o Windows PowerShell 5.1 em modo STA;
-- removida a compilação de host .NET na máquina do cliente;
-- Setup preservado em `Program Files` relança manutenção por uma cópia privada externa, criada somente após a elevação;
-- processos relacionados são identificados pelo executável e pela linha de comando;
-- instalação nova é montada em staging irmão da pasta final;
-- versão anterior é renomeada para rollback no mesmo volume;
-- promoção e restauração usam renomeação atômica;
-- resíduos de transações interrompidas são recuperados de forma determinística;
-- mutex global impede duas manutenções concorrentes;
-- mutex por usuário impede duas interfaces interativas simultâneas;
-- Setup, Portable e Source são produzidos pelo mesmo builder e recebem inventários SHA-256 completos;
-- launcher, Setup base e bridge MSI são recompilados pelo mesmo build nativo;
-- argumentos nativos usam comparação exata, sem ativação acidental por substring;
-- pipeline de CI inclui Linux para modelos/pacotes e Windows para AST, integração e smoke tests gráficos.
+## Gates automatizados da linha atual
 
-## Validação executada neste ambiente
+| Gate | Resultado |
+|---|---:|
+| Static QA | 66/66 |
+| Deep Review | 64/64 |
+| Adversarial Review | 35/35 |
+| V22 Regression | 58/58 |
+| V221 Regression | 11/11 |
+| V230 Regression | 39/39 |
+| V235 Regression | 57/57 |
+| V300 Regression | 10/10 |
+| V301 Regression | 36/36 |
+| Control Plane Syntax | 5/5 |
+| Control Plane Contract | 56/56 |
+| Behavioral Model | 9/9 |
+| Upgrade directed | 18/18 |
+| Upgrade fuzz | 100.000 cenários, 0 falhas |
+| State machine directed | 6/6 |
+| State machine fuzz | 100.000 cenários, 0 falhas |
+| Setup mutation QA | 19/19 |
+| Portable Package QA | PASS |
+| Source Package QA | PASS |
+| Build reprodutível | Setup/Portable/Source idênticos em duas gerações |
 
-Foram executados com resultado aprovado:
+## O que o ambiente de build não comprova
 
-- compilação nativa x64 com avisos tratados como erro;
-- inspeção PE32+ GUI, manifestos, ASLR, NX e high-entropy VA;
-- QA estático, profundo e adversarial;
-- regressões das linhas 2.2.x e regressão específica 2.3.5 RC;
-- modelo comportamental do runner;
-- modelo transacional de upgrade com falhas determinísticas;
-- 100.000 cenários aleatórios de upgrade;
-- 100.000 cenários da máquina de estados do runner;
-- ataques contra payload, hashes, arquivos injetados, traversal e duplicidade por caixa;
-- validação integral dos ZIPs Portable e Source;
-- duas compilações independentes dos três artefatos com igualdade byte a byte.
+- UAC real e ACL NTFS efetiva no computador do cliente;
+- aparência WinForms em todos os DPI/resoluções;
+- descoberta SQLite contra a instalação específica do SQLBackupAndFTP;
+- execução real do job;
+- criação do arquivo no destino;
+- restauração do backup;
+- comportamento após reboot real;
+- Docker/PostgreSQL/WSS reais quando esses componentes não estão em execução no ambiente de QA.
 
-Os relatórios JSON e logs usados nessa conclusão acompanham o pacote de evidências de QA da release.
+Use `docs/HOMOLOGACAO_3_0_1.md` para fechar esses pontos.
 
-## Limites objetivos
+## Dependências Node
 
-Este ambiente não executa Windows PowerShell 5.1, Windows Forms, NTFS, UAC, Agendador de Tarefas ou SQLBackupAndFTP real. Portanto, ainda são obrigatórios em Windows x64:
-
-- parser AST oficial de todos os scripts;
-- smoke test da interface e do tutorial;
-- instalação limpa, reparo, atualização e desinstalação;
-- matriz de upgrade desde 2.2.0 até 2.2.6;
-- ACL real e tarefa executada como `SYSTEM`;
-- reinicialização real;
-- backup confirmado no histórico e no destino;
-- restauração do backup em ambiente de teste.
-
-A 2.3.5 RC deve permanecer **candidata de homologação** até concluir esses testes. Aprovação dos modelos e pacotes não equivale a comprovação de backup real.
+`package-lock.json` permanece versionado e o CI usa Node 24 + `npm ci`. No ambiente de build desta auditoria, o mirror npm interno não possuía o tarball `zod@4.4.3`, portanto a instalação Node local não foi marcada como aprovada. O GitHub Actions deve ser o gate de resolução do lockfile antes do merge/release remoto.
