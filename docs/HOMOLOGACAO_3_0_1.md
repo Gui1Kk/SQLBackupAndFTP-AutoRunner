@@ -73,6 +73,7 @@ Em cada cenário:
 - [ ] Confirmar arquivo no destino.
 - [ ] Reiniciar o Windows.
 - [ ] Confirmar tarefa como SYSTEM.
+- [ ] Confirmar que uma configuração `SchemaVersion = 6` inicia o runner sem erro `Schema bootstrap ... é mais novo que o runner suporta`.
 - [ ] Confirmar execução no boot.
 - [ ] Simular falha de um job e revisar runner.log/estado.
 - [ ] Fazer restauração real do backup.
