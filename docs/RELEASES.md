@@ -50,4 +50,4 @@ Primeira reestruturação ampla do runner.
 
 ## Política
 
-Versões substituídas permanecem apenas para auditoria. Uma release só recebe status estável após CI, Windows x64, instalação, atualização, ACL, tarefa, boot, backup e restauração reais.
+Versões substituídas permanecem apenas para auditoria. Uma release só recebe status estável após os gates locais aplicáveis, Windows x64, instalação, atualização, ACL, tarefa, boot, backup e restauração reais. GitHub-hosted runners não são utilizados; o sentinel de workflow não possui gatilho autônomo e mantém todos os jobs desabilitados.
