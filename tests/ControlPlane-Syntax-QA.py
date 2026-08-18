@@ -11,7 +11,7 @@ def add(n,p,d):
 def run(cmd):
     cp=subprocess.run(cmd,cwd=ROOT,text=True,capture_output=True)
     return cp.returncode, (cp.stdout+cp.stderr).strip()
-files=sorted([*ROOT.glob('services/**/*.ts'),*ROOT.glob('deploy/scripts/*.ts')])
+files=sorted([*ROOT.glob('services/**/*.ts'),*ROOT.glob('deploy/scripts/*.ts'),*ROOT.glob('api/*.ts')])
 fail=[]
 for f in files:
     rc,out=run(['node','--experimental-strip-types','--check',str(f.relative_to(ROOT))])
@@ -24,6 +24,17 @@ for rel in ['deploy/docker/docker-compose.yml','contracts/openapi.yaml']:
         data=yaml.safe_load((ROOT/rel).read_text(encoding='utf-8-sig'))
         add(f'YAML válido: {rel}',isinstance(data,dict),f'{len(data) if isinstance(data,dict) else 0} chave(s)')
     except Exception as e: add(f'YAML válido: {rel}',False,str(e))
+
+try:
+    vercel=json.loads((ROOT/'vercel.json').read_text(encoding='utf-8-sig'))
+    rewrites=vercel.get('rewrites',[])
+    required_vercel={'/','/api/v1/:path*','/graphql','/ws/agent','/ws/ui'}
+    sources={x.get('source') for x in rewrites}
+    functions=vercel.get('functions',{})
+    valid=vercel.get('framework') is None and required_vercel.issubset(sources) and all(x in functions for x in ('api/rest.ts','api/query.ts','api/realtime.ts','api/panel.ts'))
+    add('Vercel config válido',valid,'painel + REST + GraphQL + WSS declarados')
+except Exception as e: add('Vercel config válido',False,str(e))
+
 # SQL lexical sanity: this is not a PostgreSQL parser, but catches damaged packaging.
 sql=(ROOT/'deploy/postgres/init/001_control_plane.sql').read_text(encoding='utf-8-sig')
 add('Schema PostgreSQL presente', 'CREATE TABLE IF NOT EXISTS ar_commands' in sql and 'CREATE TABLE IF NOT EXISTS ar_outbox' in sql and 'CREATE UNIQUE INDEX IF NOT EXISTS uq_ar_agents_active_install_id' in sql, 'tabelas e índices centrais localizados')

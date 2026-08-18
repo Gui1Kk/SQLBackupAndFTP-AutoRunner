@@ -61,8 +61,10 @@ SOURCE_ROOT_FILES = (
     "package.json",
     "package-lock.json",
     ".npmrc",
+    "vercel.json",
+    "tsconfig.json",
 )
-SOURCE_DIRS = (".github", "agent", "apps", "assets", "build", "contracts", "deploy", "docs", "modules", "native", "scripts", "services", "tests")
+SOURCE_DIRS = (".github", "api", "agent", "apps", "assets", "build", "contracts", "deploy", "docs", "modules", "native", "scripts", "services", "tests")
 SOURCE_EXCLUDED_NAMES = {
     "SQLBackupAndFTP-AutoRunner.exe",
     "setup-base.exe",
