@@ -63,4 +63,4 @@ Após qualquer falha deve existir uma versão antiga ou nova íntegra, nunca uma
 
 ## Gate final
 
-A release só pode ser marcada como estável depois de CI verde e homologação em Windows x64 com backup, reinicialização e restauração reais.
+A release só pode ser marcada como estável depois dos gates locais aplicáveis aprovados e homologação em Windows x64 com backup, reinicialização e restauração reais. GitHub-hosted runners não são utilizados; o sentinel de workflow não possui gatilho autônomo e mantém todos os jobs desabilitados.
