@@ -29,7 +29,7 @@ Canal: **Stable**. Este relatório descreve os gates automatizados executados du
 | V230 Regression | 39/39 |
 | V235 Regression | 57/57 |
 | V300 Regression | 10/10 |
-| V301 Regression | 36/36 |
+| V301 Regression | 40/40 |
 | Control Plane Syntax | 5/5 |
 | Control Plane Contract | 56/56 |
 | Behavioral Model | 9/9 |
@@ -57,4 +57,4 @@ Use `docs/HOMOLOGACAO_3_0_1.md` para fechar esses pontos.
 
 ## Dependências Node
 
-`package-lock.json` permanece versionado e o CI usa Node 24 + `npm ci`. No ambiente de build desta auditoria, o mirror npm interno não possuía o tarball `zod@4.4.3`, portanto a instalação Node local não foi marcada como aprovada. O GitHub Actions deve ser o gate de resolução do lockfile antes do merge/release remoto.
+`package-lock.json` permanece versionado e a linha 3.x usa Node 24. O repositório não possui gatilhos automáticos/manuais de CI no GitHub e o sentinel `.github/workflows/qa.yml` mantém todos os jobs hard-disabled antes da alocação de runner. Quando for necessário validar a árvore Node/Docker, execute `npm ci --ignore-scripts --no-audit --no-fund` manualmente em um ambiente com acesso ao registry npm. Essa validação é independente dos QAs Python/PowerShell e não deve ser inferida quando o registry estiver indisponível.
