@@ -10,6 +10,7 @@ import { registerRoutes } from './routes.ts';
 import { config } from '../../shared/src/config.ts';
 import { DomainError } from '../../shared/src/problem.ts';
 import { log } from '../../shared/src/logger.ts';
+import { drainWebhookQueue } from '../../ms-b-query-events/src/serverless-webhooks.ts';
 
 export async function buildRestApp() {
   const app=Fastify({logger:false,bodyLimit:1024*1024,trustProxy:true,requestTimeout:30_000,keepAliveTimeout:72_000});
@@ -20,7 +21,12 @@ export async function buildRestApp() {
   await app.register(swaggerUi,{routePrefix:'/docs',uiConfig:{docExpansion:'list',deepLinking:true}});
 
   app.addHook('onRequest',async(req)=>{req.startedAt=Date.now();});
-  app.addHook('onResponse',async(req,reply)=>log('info','http_request',{requestId:req.id,method:req.method,url:req.url,statusCode:reply.statusCode,durationMs:Date.now()-(req.startedAt||Date.now()),ip:req.ip}));
+  app.addHook('onResponse',async(req,reply)=>{
+    log('info','http_request',{requestId:req.id,method:req.method,url:req.url,statusCode:reply.statusCode,durationMs:Date.now()-(req.startedAt||Date.now()),ip:req.ip});
+    if(process.env.VERCEL && ['POST','PATCH','DELETE'].includes(req.method) && reply.statusCode<500){
+      await drainWebhookQueue(5).catch((error)=>log('warn','webhook_opportunistic_drain_failed',{error:error.message}));
+    }
+  });
 
   app.route({method:['GET','POST'],url:'/api/auth/*',config:{rateLimit:{max:100,timeWindow:'1 minute'}},async handler(request,reply){
     // API-key and organization administration are intentionally exposed only through

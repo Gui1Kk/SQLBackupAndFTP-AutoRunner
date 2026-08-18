@@ -25,19 +25,37 @@ export function csvEnv(name, fallback = []) {
   const raw = env(name);
   return raw ? raw.split(',').map((x) => x.trim()).filter(Boolean) : fallback;
 }
+
+function isLocalUrl(value) {
+  return /^https?:\/\/(?:localhost|127\.0\.0\.1)(?::\d+)?(?:\/|$)/i.test(String(value||''));
+}
+const vercelHost = env('VERCEL_URL');
+const vercelBaseUrl = vercelHost ? `https://${vercelHost}` : null;
+function publicHttpEnv(name, fallback) {
+  const configured = env(name);
+  if (vercelBaseUrl && (!configured || isLocalUrl(configured))) return vercelBaseUrl;
+  return configured || fallback;
+}
+function publicWsEnv() {
+  const configured = env('PUBLIC_WS_URL');
+  if (vercelBaseUrl && (!configured || /^wss?:\/\/(?:localhost|127\.0\.0\.1)(?::\d+)?(?:\/|$)/i.test(configured))) {
+    return vercelBaseUrl.replace(/^https:/,'wss:') + '/ws/agent';
+  }
+  return configured || 'ws://localhost:8080/ws/agent';
+}
 export const config = Object.freeze({
   nodeEnv: env('NODE_ENV', 'production'),
   databaseUrl: requiredEnv('DATABASE_URL'),
-  betterAuthUrl: env('BETTER_AUTH_URL', 'http://localhost:8080'),
+  betterAuthUrl: publicHttpEnv('BETTER_AUTH_URL', 'http://localhost:8080'),
   betterAuthSecret: requiredEnv('BETTER_AUTH_SECRET'),
-  trustedOrigins: csvEnv('TRUSTED_ORIGINS', ['http://localhost:8080']),
+  trustedOrigins: csvEnv('TRUSTED_ORIGINS', vercelBaseUrl ? [vercelBaseUrl] : ['http://localhost:8080']),
   allowPublicSignup: envBool('ALLOW_PUBLIC_SIGNUP', false),
   agentSecretPepper: requiredEnv('AGENT_SECRET_PEPPER'),
   realtimeSigningSecret: requiredEnv('REALTIME_SIGNING_SECRET'),
   internalServiceSecret: requiredEnv('INTERNAL_SERVICE_SECRET'),
   webhookEncryptionKey: requiredEnv('WEBHOOK_ENCRYPTION_KEY'),
-  publicBaseUrl: env('PUBLIC_BASE_URL', 'http://localhost:8080'),
-  publicWsUrl: env('PUBLIC_WS_URL', 'ws://localhost:8080/ws/agent'),
+  publicBaseUrl: publicHttpEnv('PUBLIC_BASE_URL', 'http://localhost:8080'),
+  publicWsUrl: publicWsEnv(),
   commandDefaultTtlSeconds: envInt('COMMAND_DEFAULT_TTL_SECONDS', 900),
   commandMaxRunningSeconds: envInt('COMMAND_MAX_RUNNING_SECONDS', 86400),
   heartbeatIntervalSeconds: envInt('HEARTBEAT_INTERVAL_SECONDS', 30),

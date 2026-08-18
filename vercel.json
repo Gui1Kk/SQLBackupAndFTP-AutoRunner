@@ -14,6 +14,12 @@
     "api/asset.ts": {
       "maxDuration": 10,
       "includeFiles": "assets/AutoRunner.png"
+    },
+    "api/query.ts": {
+      "maxDuration": 60
+    },
+    "api/realtime.ts": {
+      "maxDuration": 300
     }
   },
   "rewrites": [
@@ -32,6 +38,18 @@
     {
       "source": "/assets/AutoRunner.png",
       "destination": "/api/asset"
+    },
+    {
+      "source": "/graphql",
+      "destination": "/api/query"
+    },
+    {
+      "source": "/ws/agent",
+      "destination": "/api/realtime"
+    },
+    {
+      "source": "/ws/ui",
+      "destination": "/api/realtime"
     },
     {
       "source": "/api/auth/:path*",

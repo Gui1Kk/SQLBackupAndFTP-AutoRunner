@@ -6,6 +6,7 @@ import { databaseReady, pool } from '../../shared/src/db.ts';
 import { config } from '../../shared/src/config.ts';
 import { log } from '../../shared/src/logger.ts';
 import { startWebhookWorkers } from './webhooks.ts';
+import { drainWebhookQueue } from './serverless-webhooks.ts';
 
 process.env.SERVICE_NAME='ms-b-query-events';
 const abort = new AbortController();
@@ -69,9 +70,17 @@ const server=http.createServer(async(req,res)=>{
   const contentLength=Number(req.headers['content-length']||0);
   if(Number.isFinite(contentLength)&&contentLength>config.graphqlMaxBodyBytes){res.writeHead(413,{'content-type':'application/json'});return res.end(JSON.stringify({errors:[{message:'Corpo GraphQL excede o limite permitido.'}]}));}
   if(!allowRequest(requestIp(req),config.graphqlRequestsPerMinute)){res.writeHead(429,{'content-type':'application/json','retry-after':'60'});return res.end(JSON.stringify({errors:[{message:'Limite de requisições excedido.'}]}));}
-  return yoga(req,res);
+  await yoga(req,res);
+  if(process.env.VERCEL){
+    await drainWebhookQueue(5).catch((error)=>log('warn','webhook_opportunistic_drain_failed',{error:error.message}));
+  }
 });
-startWebhookWorkers(abort.signal);
-server.listen(config.msBPort,config.serviceHost,()=>log('info','ms_b_listening',{port:config.msBPort}));
-async function shutdown(signal){log('info','shutdown',{signal});abort.abort();clearInterval(requestWindowGc);await new Promise((resolve)=>server.close(resolve));await pool.end();process.exit(0);}
-for(const sig of ['SIGTERM','SIGINT'])process.on(sig,()=>shutdown(sig));
+
+if(!process.env.VERCEL){
+  startWebhookWorkers(abort.signal);
+  server.listen(config.msBPort,config.serviceHost,()=>log('info','ms_b_listening',{port:config.msBPort}));
+  async function shutdown(signal){log('info','shutdown',{signal});abort.abort();clearInterval(requestWindowGc);await new Promise((resolve)=>server.close(resolve));await pool.end();process.exit(0);}
+  for(const sig of ['SIGTERM','SIGINT'])process.on(sig,()=>shutdown(sig));
+}
+
+export default server;
